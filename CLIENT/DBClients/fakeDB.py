@@ -34,7 +34,9 @@ class Chat:
         self.messages = []
 class DB:
     def __init__(self):
-        self.chats = {'user1': {'messages': [],'firstname':'firstname','lastname':'lastname'}}
+        # self.chats = {'user1': {'messages': [],'firstname':'firstname','lastname':'lastname'}}
+        self.chats = {}
+
         self.users = {'user1': {'firstname':'firstname','lastname':'lastname'}}
     def addChat(self,username):
 

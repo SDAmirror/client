@@ -49,7 +49,7 @@ class Worker(QRunnable):
         self.signals = WorkerSignals()
         self.kwargs['newChat'] = self.signals.newChat
         self.kwargs['newMessage']= self.signals.newMessage
-        # self.kwargs['listFriends']= self.signals.listFriends
+        self.kwargs['listFriends']= self.signals.listFriends
 
     @pyqtSlot()
     def run(self):
@@ -200,10 +200,15 @@ class searchUserItem(QWidget):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
             if event.buttons() & Qt.LeftButton:
-                print(obj, "global pos:", event.globalPos(),
-                      "local pos", event.pos(),
-                      "position with respect to self",
-                      self.mapFromGlobal(obj.mapToGlobal(event.pos())))
+                db.addChat(self.username)
+
+
+                f = MessageBox(self.username,"")
+                f.parent = self.parent
+                self.parent.sideBar.chatBar.chat_list[self.username] = f
+                self.parent.sideBar.chatBar.layout.addWidget(f)
+                self.parent.openChat(self.username)
+                self.parent.sideBar.userSearch.closeList()
 
             if event.buttons() & Qt.RightButton:
                 print(obj, "global pos:", event.globalPos(),
@@ -220,7 +225,7 @@ class userSearchList(scroller):
         super(userSearchList, self).__init__()
         self.parent = parent
         self.localDBUsers = []
-        self.localDBUsers = []
+        self.remoteDBUsers = []
 
 
 
@@ -419,6 +424,7 @@ class MessageInputArea(QWidget):
         self.resized.connect(self.adj)
         self.textEnter.connect(self.adj)
         self.input.textChanged.connect(self.adj)
+
     def resizeEvent(self, event):
         self.resized.emit()
         return super(MessageInputArea,self).resizeEvent(event)
@@ -498,6 +504,11 @@ class MainWindow(QWidget):
         #
         self.layout.addWidget(self.l3,0,3,1,1)
         self.layout.setColumnStretch(3,3)
+    def listRemoteSearchUsers(self,users):
+        for u in users['users']:
+            si = searchUserItem(u['username'],u['firstname'],u['lastname'],self)
+            self.sideBar.userSearch.userlist.layout.addWidget(si)
+            self.sideBar.userSearch.userlist.remoteDBUsers.append(si)
 
     def addChat(self, username):
 
@@ -551,7 +562,7 @@ class MainWindow(QWidget):
 
         #add message to area
 
-    def listen_for_messages(self, newChat,newMessage):
+    def listen_for_messages(self, newChat,newMessage,listFriends):
         global db
         message_receiver = self.message_receiver
         while True:
@@ -568,7 +579,8 @@ class MainWindow(QWidget):
                             print(jm)
                         elif jm["url"] == "addfriendresponse":
                             print(jm)
-                            # listFriends.emit(jm)
+
+                            listFriends.emit(jm)
                         elif jm["url"] == "message":
 
                             if jm['message']["sender"] == self.username:
@@ -652,7 +664,7 @@ class MainWindow(QWidget):
         worker.signals.finished.connect(self.thread_complete)
         worker.signals.newChat.connect(self.addChat)
         worker.signals.newMessage.connect(self.newMessage)
-        # worker.signals.listFriends.connect(self.newMessage)
+        worker.signals.listFriends.connect(self.listRemoteSearchUsers)
         self.threadpool.start(worker)
 
     def runServer(self):
@@ -678,7 +690,7 @@ class MainWindow(QWidget):
             server_public_key = s.recv(2048).decode()
             cryptor.set_server_public_key(server_public_key)
         except ConnectionResetError as e:
-            print(f"client disconnected")
+            print(f"client disconnected",e)
             s.close()
         try:
             key = message_sender.send_message(1, cryptor.load_Public_key()['key'].save_pkcs1())
