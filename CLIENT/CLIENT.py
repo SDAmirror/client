@@ -97,13 +97,20 @@ class MessageBox(QWidget):
         self.box.addWidget(self.userLabel,0,0,3,1)
         self.box.addWidget(self.messsageLabel,3,0,3,10)
         self.setLayout(self.box)
+        for w in self.findChildren(QWidget) + [self]:
+            w.installEventFilter(self)
 
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseButtonPress:
+            if event.buttons() & Qt.LeftButton:
+                self.parent.openChat(self.username)
+        return super(MessageBox, self).eventFilter(obj, event)
     def setMessage(self,message):
         self.messsageLabel.setText(message[:20]+"...")
-
-    def mousePressEvent(self, QMouseEvent):
-        # print("self.parent.openChat(self.username)",self.parent)
-        self.parent.openChat(self.username)
+    #
+    # def mousePressEvent(self, QMouseEvent):
+    #     # print("self.parent.openChat(self.username)",self.parent)
+    #     self.parent.openChat(self.username)
 
 class scroller(QWidget):
     def __init__(self):
