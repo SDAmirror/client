@@ -1,45 +1,73 @@
-from PyQt5.QtWidgets import QComboBox, QMainWindow, QApplication, QWidget, QVBoxLayout
-import sys
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from functools import partial
 
 
-class MainWindow(QMainWindow):
 
+
+class AppWindow(QWidget):
+    # signals
+    # switcTabSygnal = sts()
     def __init__(self):
-        super().__init__()
+        super(AppWindow, self).__init__()
+        self.layout = QGridLayout()
+        self.TAB = QPushButton("Send")
+        self.layout.addWidget(self.TAB,0,0,1,1)
+        # conf = configparser.ConfigParser()
+        # conf.read('settings/auth.ini')
+        # if bool(conf['AUTHDATA']['authenticated']):
+        #     # window.setLayout(window.authTab.layout)
+        #     pass
 
-        # Keep a reference to combobox on self, so we can access it in our methods.
-        self.combobox = QComboBox()
-
-        self.combobox.setEditable(False)
-
-        self.insertpolicy = QComboBox()
-        self.insertpolicy.addItems([
-            'NoInsert',
-            'InsertAtTop',
-            'InsertAtCurrent',
-            'InsertAtBottom',
-            'InsertAfterCurrent',
-            'InsertBeforeCUrrent',
-            'InsertAlphabetically'
-        ])
-        # The index in the insertpolicy combobox (0-6) is the correct flag value to set
-        # to enable that insert policy.
-        self.insertpolicy.currentIndexChanged.connect(self.combobox.setInsertPolicy)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.combobox)
-        layout.addWidget(self.insertpolicy)
-
-        container = QWidget()
-        container.setLayout(layout)
-
-        self.setCentralWidget(container)
-
-    def current_text_changed(self, s):
-        print("Current text: ", s)
+        self.username = ""
+        self.socket = None
+        self.cryptor = None
+        self.message_sender = None
+        self.message_receiver = None
+        self.senders = []
+        self.counter = 0
+        self.newmessages = {}
+        self.mbox = []
+        self.tempNewChats = {}
+        # self.switcTabSygnal.switcTabSygnal.connect(self.switchTab)
+        # self.runServer()
+        self.sbut = QPushButton('sew')
+        self.sbut.clicked.connect(self.switchTab)
+        self.layout.addWidget(self.sbut)
+        self.setLayout(self.layout)
 
 
-app = QApplication(sys.argv)
-w = MainWindow()
-w.show()
-app.exec_()
+
+
+    def switchTab(self):
+        mv = QTextEdit("jw")
+
+        self.layout.removeWidget(self.TAB)
+        self.TAB.deleteLater()
+
+
+        self.TAB = None
+        self.TAB = mv
+        self.layout.addWidget(self.TAB,0,0,1,1)
+
+
+        # self.TAB.username = self.username
+        # self.TAB.socket = self.socket
+        # self.TAB.cryptor = self.cryptor
+        # self.TAB.message_sender = self.message_sender
+        # self.TAB.message_receiver = self.message_receiver
+        # self.TAB.listenPool()
+
+        # print(f'tab changed tp {type(self.TAB)}')
+
+if __name__ == "__main__":
+    RHOST = "192.168.1.122"
+    RHOST = "localhost"
+    app = QApplication([])
+    window = AppWindow()
+
+    # window.runServer()
+    window.show()
+    app.exec_()
+    # window.socket.close()

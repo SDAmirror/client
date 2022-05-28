@@ -79,7 +79,7 @@ class Worker(QRunnable):
         self.kwargs['newChat'] = self.signals.newChat
         self.kwargs['newMessage']= self.signals.newMessage
         self.kwargs['listFriends']= self.signals.listFriends
-
+        self.kwargs['start']  = self.signals.start
 
     @pyqtSlot()
     def run(self):
@@ -524,33 +524,36 @@ class ChatWindow(QWidget):
 
 class MainWindow(QWidget):
 
-    def __init__(self,username,messagesender,messagereceiver,cryptor,socket, parent,*args, **kwargs):
+    def __init__(self,parent, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.parent = parent
         self.counter = 0
         self.dialogs = {}
+
         self.layout = QGridLayout()
         self.sideBar = SideBar(self)
         self.sideBar.chatBar.allChats()
         self.l3 = ChatWindow("nono")
         self.l3.parent = self
         self.layout.addWidget(self.sideBar, 0, 0, 1, 2)
+
         self.layout.addWidget(self.l3,0,3,1,1)
+
+
         self.l3.inputArea.sendButton.clicked.connect(self.printer)
         self.layout.setColumnStretch(3,3)
-        self.setLayout(self.layout)
+
         self.username = ""
-        self.socket = socket
-        self.cryptor = cryptor
-        self.message_sender = messagesender
-        self.message_receiver = messagereceiver
+        self.socket = None
+        self.cryptor = None
+        self.message_sender = None
+        self.message_receiver = None
         self.senders = []
         self.counter = 0
         self.newmessages = {}
         self.mbox = []
         self.tempNewChats = {}
         self.threadpool = QThreadPool()
-        self.listenPool()
 
 
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
@@ -629,7 +632,6 @@ class MainWindow(QWidget):
         #add message to area
 
     def listen_for_messages(self, newChat,newMessage,listFriends):
-        print("i am listening")
         global db
         message_receiver = self.message_receiver
         while True:
@@ -733,48 +735,141 @@ class MainWindow(QWidget):
         worker.signals.listFriends.connect(self.listRemoteSearchUsers)
         self.threadpool.start(worker)
 
+    #TODO вынести runserver за пределы main window
+    def switchTab(self, tab):
+        pass
 
+    def runServer(self):
+
+        #url what fron auth tabs
+        self.username = "user5"
+
+        SERVER_HOST = RHOST
+
+        SERVER_PORT = RPORT
+
+        cryptor = RSACryptor(1)
+        cryptor.generate_RSA_keys()
+        self.cryptor = cryptor
+
+        message_sender = message_processor.Message_Sender(cryptor)
+        message_receiver = message_processor.Message_Recirver(cryptor)
+        self.message_sender = message_sender
+        self.message_receiver = message_receiver
+        s = ssl.wrap_socket(socket.socket())
+        s.connect((SERVER_HOST, SERVER_PORT))
+        self.socket = s
+        print("[+] Connected.")
+        try:
+            server_public_key = s.recv(2048).decode()
+            cryptor.set_server_public_key(server_public_key)
+        except ConnectionResetError as e:
+            print(f"client disconnected",e)
+            s.close()
+        try:
+            key = message_sender.send_message(1, cryptor.load_Public_key()['key'].save_pkcs1())
+            s.send(key)
+        except ConnectionResetError as e:
+            print(f"client disconnected")
+            s.close()
+        #socket is ready
+        #here authentication
+
+    def authenticateClient(self,data,start):
+
+        message_sender = self.message_sender
+        message_receiver = self.message_receiver
+        cou = 3
+        while cou > 0:
+            self.socket.send(message_sender.send_message(1, json.dumps(data)))
+            m = self.socket.recv()
+            status = json.loads(message_receiver.recieve_message(1, m))
+            if status['auth_data_exchange']:
+
+                break
+            else:
+                cou -= 1
+                if status['error'] == 50401:
+                    print('data sent unsuccessful')
+
+        print("sent")
+        m = self.socket.recv(2048)
+        m = message_receiver.recieve_message(1, m)
+
+        print(m, 'recived')
+        mess = json.loads(str(m))
+        print(mess)
+        if mess['auth_success']:
+            print(mess['AuthenticationUser'])
+            self.switcTabSygnal.emit({'tab':'main'})
+            self.listenPool()
+        else:
+            print("failed",mess['reason'])
+            self.socket.close()
+            self.close()
+            raise KeyboardInterrupt
 class sts(QObject):
-    switchTab = pyqtSignal()
-    loginError = pyqtSignal(dict)
-
+    switcTabSygnal = pyqtSignal()
 class AppWindow(QWidget):
     # signals
-    signals = sts()
+    switcTabSygnal = sts()
     def __init__(self):
         super(AppWindow, self).__init__()
-        self.layout = QVBoxLayout()
+        self.layout = QGridLayout()
         self.TAB = AuthenticationTab(self)
-        self.layout.addWidget(self.TAB)
+        self.layout.addWidget(self.TAB,0,0,1,1)
         # conf = configparser.ConfigParser()
         # conf.read('settings/auth.ini')
         # if bool(conf['AUTHDATA']['authenticated']):
         #     # window.setLayout(window.authTab.layout)
         #     pass
+
         self.username = ""
         self.socket = None
         self.cryptor = None
         self.message_sender = None
         self.message_receiver = None
-
-        self.signals.switchTab.connect(self.switchTab)
-        self.signals.loginError.connect(self.TAB.reportError)
+        self.senders = []
+        self.counter = 0
+        self.newmessages = {}
+        self.mbox = []
+        self.tempNewChats = {}
+        self.switcTabSygnal.switcTabSygnal.connect(self.switchTab)
         self.runServer()
+        self.sbut = QPushButton('sew')
+        self.sbut.clicked.connect(partial(self.switchTab,{}))
+        self.layout.addWidget(self.sbut)
         self.setLayout(self.layout)
         self.threadpool = QThreadPool()
 
 
 
     def switchTab(self):
-        mv = MainWindow(self.username,self.message_sender,self.message_receiver,self.cryptor,self.socket,self)
+        mv = MainWindow(self)
+
+        # self.TAB.tab.sendButton.disconnect()
         self.layout.removeWidget(self.TAB)
         self.TAB.deleteLater()
-        self.TAB.close()
+
+
         self.TAB = None
         self.TAB = mv
-        self.layout.addWidget(self.TAB)
+        self.layout.addWidget(self.TAB,0,0,1,1)
 
 
+        self.TAB.username = self.username
+        self.TAB.socket = self.socket
+        self.TAB.cryptor = self.cryptor
+        self.TAB.message_sender = self.message_sender
+        self.TAB.message_receiver = self.message_receiver
+        self.TAB.listenPool()
+
+        print(f'tab changed tp {type(self.TAB)}')
+    # def start(self,data):
+    #     worker = AuthWorker(self.authenticateClient)
+    #     worker.signals.finished.connect(self.thread_complete)
+    #     worker.signals.start.connect(self.switchTab)
+    #     self.threadpool.start(worker)
     def print_output(self, s):
         print(s)
 
@@ -812,11 +907,9 @@ class AppWindow(QWidget):
         try:
             key = message_sender.send_message(1, cryptor.load_Public_key()['key'].save_pkcs1())
             s.send(key)
-            print(self.socket)
         except ConnectionResetError as e:
             print("client disconnected",e)
             s.close()
-
         # socket is ready
         # here authentication
 
@@ -851,11 +944,12 @@ class AppWindow(QWidget):
         print(mess)
         if mess['auth_success']:
             print(mess['AuthenticationUser'])
-            self.signals.switchTab.emit()
+            self.switcTabSygnal.switcTabSygnal.emit()
         else:
             print("failed", mess['reason'])
-            self.signals.loginError.emit(mess)
-            # raise KeyboardInterrupt
+            self.socket.close()
+            self.close()
+            raise KeyboardInterrupt
 
 if __name__ == "__main__":
     RHOST = "192.168.1.122"
