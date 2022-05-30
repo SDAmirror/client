@@ -190,7 +190,7 @@ class RegistrationTab(QWidget):
 
                 """)
         self.layout.addWidget(self.sendButton, 6, 0, 1, 2)
-        self.sendButton.clicked.connect(self.print)
+        self.sendButton.clicked.connect(self.prepareData)
 
         self.layout.addWidget(QLabel("Allready registred?"), 7, 0, 1, 1)
         self.switchButton = QPushButton("Login")
@@ -242,7 +242,7 @@ class RegistrationTab(QWidget):
             }
         """)
     def prepareData(self):
-        if self.password.text().strip() == self.password_repeat.text().strip():
+        if not self.password.text().strip() == self.password_repeat.text().strip():
             print('repeat pass do not matc')
         data = {
             "auth_check": 1,
@@ -255,7 +255,7 @@ class RegistrationTab(QWidget):
                 "email": str(self.email.text()).strip()
             }
         }
-        return data
+        self.parent.registerClient(data)
 
     def print(self):
         print(f"{self.username.text()} {self.password.text()}")
@@ -264,9 +264,11 @@ class CodeVerification(QWidget):
 
     def __init__(self,parent):
         super(CodeVerification, self).__init__()
+        self.parent = parent
         self.layout = QGridLayout()
         self.layout.addWidget(QLabel("CODE"), 0, 0, 1, 1)
-        self.layout.addWidget(self.password, 0, 1, 1, 1)
+        self.codeInput = QLineEdit()
+        self.layout.addWidget(self.codeInput,0,1,1,1)
         self.sendButton = QPushButton("SEND")
         self.sendButton.setStyleSheet("""
 
@@ -299,10 +301,19 @@ class CodeVerification(QWidget):
 
 
                 """)
+        self.sendButton.clicked.connect(self.prepareData)
         self.layout.addWidget(self.sendButton, 1, 0, 1, 2)
+        self.setLayout(self.layout)
+
+    def prepareData(self):
+        code = self.codeInput.text().strip()
+        self.parent.sendCode(code)
+
 class AuthenticationTab(QWidget):
+
     def __init__(self,parent):
         super(AuthenticationTab, self).__init__()
+        self.codeVerification = None
         self.parent = parent
         self.layout = QGridLayout()
         self.alert = AuthAlert(parent)
@@ -310,10 +321,29 @@ class AuthenticationTab(QWidget):
         self.tab = LoginTab(parent)
         self.layout.addWidget(self.tab,1,0,1,1)
         self.setLayout(self.layout)
+        self.tab.switchButton.clicked.connect(self.switchTab)
+
+
+    def switchTab(self):
+        if self.tab.tabName == "login":
+            tab = RegistrationTab(self.parent)
+        elif self.tab.tabName == "register":
+            tab = LoginTab(self.parent)
+        self.layout.removeWidget(self.tab)
+        self.tab.deleteLater()
+        self.tab.close()
+        self.tab = None
+        self.tab = tab
+        self.tab.switchButton.clicked.connect(self.switchTab)
+        self.layout.addWidget(self.tab,1,0,1,1)
 
     def processAuthentication(self):
         pass
-
+    def addCodeVerification(self):
+        self.codeVerification = CodeVerification(self.parent)
+        self.layout.addWidget(self.codeVerification,2,0,1,1)
+        self.update()
     def reportError(self,error):
         self.alert.messageBox.setText(error['reason'])
+
 

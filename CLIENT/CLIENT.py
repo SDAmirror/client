@@ -40,33 +40,7 @@ class WorkerSignals(QObject):
     listFriends = pyqtSignal(dict)
 
 
-class AuthSignals(QObject):
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    start = pyqtSignal(dict)
-class AuthWorker(QRunnable):
 
-    def __init__(self, fn, *args, **kwargs):
-        super(AuthWorker, self).__init__()
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = AuthSignals()
-        self.kwargs['start']  = self.signals.start
-
-    @pyqtSlot()
-    def run(self):
-        try:
-            result = self.fn(*self.args, **self.kwargs)
-        except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
-        else:
-            self.signals.result.emit(result)  # Return the result of the processing
-        finally:
-            self.signals.finished.emit()  # Done
 class Worker(QRunnable):
 
 
@@ -407,11 +381,12 @@ class MessageItem(QWidget):
             border-radius: 15px
             }
         """)
-        self.content.setFixedHeight(math.ceil(self.content.document().size().height()) + math.ceil(self.content.contentsMargins().top() * 2))
         self.layout.addWidget(self.content)
+        # self.content.setFixedHeight(math.ceil(self.content.document().size().height()) + math.ceil(self.content.contentsMargins().top() * 2))
         self.date = message.send_date
         self.time = message.send_time
         self.setLayout(self.layout)
+        self.adj()
         self.resized.connect(self.adj)
 
 
@@ -453,6 +428,36 @@ class MessageInputArea(QWidget):
         self.layout = QGridLayout()
         self.layout.setColumnStretch(1,2)
         self.sendButton = QPushButton("send")
+        self.sendButton.setStyleSheet("""
+            .QPushButton {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+            }
+
+        """)
+
         self.layout.addWidget(self.sendButton,0,5,2,2)
         self.input = QTextEdit()
         # self.input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -599,6 +604,7 @@ class MainWindow(QWidget):
                 self.l3.messagesArea.messages.append(mi)
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages),mi)
                 self.sideBar.chatBar.chat_list[username].setMessage(mm.content)
+                mi.resized.emit()
             self.sideBar.chatBar.chat_list[username].setMessage(jm['message']['content'])
 
     def sendMessage(self,username,message):
@@ -621,6 +627,7 @@ class MainWindow(QWidget):
                 self.l3.messagesArea.messages.append(mi)
 
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages), mi)
+                mi.resized.emit()
 
         except Exception as e:
             print(e)
@@ -736,7 +743,38 @@ class MainWindow(QWidget):
 
 class sts(QObject):
     switchTab = pyqtSignal()
+    openCodeTab = pyqtSignal()
     loginError = pyqtSignal(dict)
+class AuthSignals(QObject):
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    start = pyqtSignal(dict)
+    opencodetab = pyqtSignal()
+class AuthWorker(QRunnable):
+
+    def __init__(self, fn, *args, **kwargs):
+        super(AuthWorker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = AuthSignals()
+        self.kwargs['start']  = self.signals.start
+
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
 
 class AppWindow(QWidget):
     # signals
@@ -746,11 +784,7 @@ class AppWindow(QWidget):
         self.layout = QVBoxLayout()
         self.TAB = AuthenticationTab(self)
         self.layout.addWidget(self.TAB)
-        # conf = configparser.ConfigParser()
-        # conf.read('settings/auth.ini')
-        # if bool(conf['AUTHDATA']['authenticated']):
-        #     # window.setLayout(window.authTab.layout)
-        #     pass
+
         self.username = ""
         self.socket = None
         self.cryptor = None
@@ -759,8 +793,18 @@ class AppWindow(QWidget):
 
         self.signals.switchTab.connect(self.switchTab)
         self.signals.loginError.connect(self.TAB.reportError)
+        self.signals.openCodeTab.connect(self.TAB.addCodeVerification)
         self.runServer()
         self.setLayout(self.layout)
+        conf = configparser.ConfigParser()
+        conf.read('settings/auth.ini')
+        if bool(conf['AUTHDATA']['authenticated']):
+            self.authenticateClient({
+                "auth_check": 1,
+                "url": "authentication",
+                "authentification_token": conf['AUTHDATA']['auth_token'],
+                "authorization_data": [conf['AUTHDATA']['username'], ''],
+            })
         self.threadpool = QThreadPool()
 
 
@@ -774,13 +818,11 @@ class AppWindow(QWidget):
         self.TAB = mv
         self.layout.addWidget(self.TAB)
 
-
     def print_output(self, s):
         print(s)
 
     def thread_complete(self):
         print("THREAD COMPLETE!")
-
 
     def runServer(self):
 
@@ -820,6 +862,136 @@ class AppWindow(QWidget):
         # socket is ready
         # here authentication
 
+    def registerPool(self,data):
+        self.username = data['registration_data']['username']
+        message_sender = self.message_sender
+        message_receiver = self.message_receiver
+        cou = 3
+        while cou > 0:
+            self.socket.send(message_sender.send_message(1, json.dumps(data)))
+            m = self.socket.recv()
+            status = json.loads(message_receiver.recieve_message(1, m))
+            if status['auth_data_exchange']:
+                print('data sent sucsessfully')
+                break
+            else:
+                cou -= 1
+                if status['error'] == 50401:
+                    print('data sent unsuccessful')
+
+        print("sent")
+        pass
+        worker = AuthWorker(self.registerClientCode)
+        worker.signals.opencodetab.connect(self.TAB)
+
+    def registerClientCode(self):
+        message_sender = self.message_sender
+        message_receiver = self.message_receiver
+        while True:
+            code = input('code')
+            if code == "q": break
+            self.socket.send(message_sender.send_message(1, code))
+            print("sent")
+            m = self.socket.recv(2048)
+            m = message_receiver.recieve_message(1, m)
+            print(m)
+
+        print("sent")
+        m = self.socket.recv(2048)
+        m = message_receiver.recieve_message(1, m)
+
+        print(m, 'recived')
+        mess = json.loads(str(m))
+        print(mess)
+        # if mess['auth_success']:
+        #     print(mess['AuthenticationUser'])
+        #     self.signals.switchTab.emit()
+        # else:
+        #     print("failed", mess['reason'])
+        #     self.signals.loginError.emit(mess)
+        #     # raise KeyboardInterrupt
+    def sendCode(self,code):
+        message_sender = self.message_sender
+        message_receiver = self.message_receiver
+
+        self.socket.send(message_sender.send_message(1, json.dumps({'code':code})))
+        print("sent")
+        m = self.socket.recv(2048)
+        m = message_receiver.recieve_message(1, m)
+        try:
+            m = json.loads(str(m))
+            if m['url'] == 'registration':
+                if 'auth_success' in m.keys():
+                    print(m)
+                    if m['auth_success']:
+                        print(m['AuthenticationUser'])
+                        conf = configparser.ConfigParser()
+                        conf.read('settings/auth.ini')
+                        conf['AUTHDATA']['authenticated'] = 'yes'
+                        conf['AUTHDATA']['auth_token'] = m['AuthenticationUser']['authentication_token']
+                        conf['AUTHDATA']['username'] = m['AuthenticationUser']['user']['username']
+                        with open('settings/auth.ini', 'w') as configfile:
+                            conf.write(configfile)
+                        self.switchTab()
+                    else:
+                        if 'AuthenticationUser' in m.keys():
+
+                            print("failed, but registred")
+                        else:
+                            print(m)
+                        # self.signals.loginError.emit(m)
+
+                if not m['auth_data_exchange']:
+                    print(m['error'])
+
+        except json.JSONDecodeError as e:
+            print(e)
+        except Exception as e:
+            print(e,892)
+        print(m)
+    def registerClient(self,data):
+        self.username = data['registration_data']['username']
+        message_sender = self.message_sender
+        message_receiver = self.message_receiver
+        cou = 3
+        while cou > 0:
+            self.socket.send(message_sender.send_message(1, json.dumps(data)))
+            m = self.socket.recv()
+            status = json.loads(message_receiver.recieve_message(1, m))
+            if status['auth_data_exchange']:
+                print('data sent sucsessfully')
+                break
+            else:
+                cou -= 1
+                if status['error'] == 50401:
+                    print('data sent unsuccessful')
+
+        print("sent")
+        self.TAB.addCodeVerification()
+
+        # while True:
+        #     code = input('code')
+        #     if code == "q":
+        #         break
+        #     self.socket.send(message_sender.send_message(1, code))
+        #     print("sent")
+        #     m = self.socket.recv(2048)
+        #     m = message_receiver.recieve_message(1, m)
+        #     print(m)
+        #
+        # m = self.socket.recv(2048)
+        # m = message_receiver.recieve_message(1, m)
+        #
+        # print(m, 'recived')
+        # mess = json.loads(str(m))
+        # print(mess)
+        # if mess['auth_success']:
+        #     print(mess['AuthenticationUser'])
+        #     self.signals.switchTab.emit()
+        # else:
+        #     print("failed", mess['reason'])
+        #     self.signals.loginError.emit(mess)
+        # self.TAB.addCodeVerification()
     def authenticateClient(self, data):
         # data = {
         #     "auth_check": 1,
@@ -851,7 +1023,16 @@ class AppWindow(QWidget):
         print(mess)
         if mess['auth_success']:
             print(mess['AuthenticationUser'])
-            self.signals.switchTab.emit()
+            conf = configparser.ConfigParser()
+            conf.read('settings/auth.ini')
+            conf['AUTHDATA']['authenticated'] = 'yes'
+            conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
+            conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
+            with open('settings/auth.ini', 'w') as configfile:
+                conf.write(configfile)
+
+
+            self.switchTab()
         else:
             print("failed", mess['reason'])
             self.signals.loginError.emit(mess)
@@ -868,10 +1049,11 @@ if __name__ == "__main__":
     app.exec_()
     window.socket.close()
 
-
+#
 # if __name__ == "__main__":
 #     app = QApplication([])
-#     window = CodeVerification()
+#
+#     window = AuthenticationTab(None)
 #
 #     window.show()
 #     app.exec_()
