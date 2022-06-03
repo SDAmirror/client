@@ -118,23 +118,7 @@ class LoginTab(QWidget):
 
 class RegistrationTab(QWidget):
     def __init__(self,parent):
-        {
-            "auth_check": 1,
-            "url": "authorization",
-            # "authentification_check": False,
-            "authentification_token": "d3a5f6cb-01a8-4bff-b076-64550ff85921",
-            # "authorization_check": False,
-            "authorization_data": ["user5", "password3"],
-            "registration_data": {
-                "username": "555666",
-                "password": "passwordww3",
-                "first_name": "first_name3",
-                "last_name": "last_name3",
-                # "email": "myvideoboxdsa@gmail.com"
-                "email": "d.sadykov@astanait.edu.kz"
-                # "email": "gulnur.kst@gmail.com"
-            }
-        }
+
         super(RegistrationTab, self).__init__()
         self.parent = parent
         self.tabName = "register"
@@ -313,6 +297,7 @@ class AuthenticationTab(QWidget):
 
     def __init__(self,parent):
         super(AuthenticationTab, self).__init__()
+        self.tabName = 'authTab'
         self.codeVerification = None
         self.parent = parent
         self.layout = QGridLayout()

@@ -5,7 +5,6 @@ import socket
 import ssl
 import json
 import message_processor
-from authwindow import *
 from DBClients.fakeDB import DB,MessageModel
 from  MessageCtryptor import RSACryptor
 from PyQt5.QtWidgets import *
@@ -13,19 +12,17 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from functools import partial
 import uuid
-import time
 import traceback, sys
 from authwindow import *
 
+
+
 db = DB()
-_t_Listenner = None
 conu = 0
 RHOST="localhost"
 RPORT=4430
 
-
-
-
+edits = []
 
 class GeneralSygnals(QObject):
     openChat = pyqtSignal()
@@ -38,8 +35,6 @@ class WorkerSignals(QObject):
     newChat = pyqtSignal(str)
     newMessage = pyqtSignal(str,str)
     listFriends = pyqtSignal(dict)
-
-
 
 class Worker(QRunnable):
 
@@ -68,8 +63,6 @@ class Worker(QRunnable):
         finally:
             self.signals.finished.emit()  # Done
 
-
-edits = []
 class MessageBox(QWidget):
     def __init__(self,username="default",message="default"):
         super().__init__()
@@ -135,7 +128,6 @@ class scroller(QWidget):
         self.vout.addWidget(self.scrollArea)
         self.setLayout(self.vout)
 
-
 class ChatList(scroller):
     def __init__(self):
         super().__init__()
@@ -162,6 +154,7 @@ class ChatList(scroller):
     def allChats(self):
         chats = db.chats
         userlist = list(chats.keys())
+        self.counter = len(userlist)
         for u in userlist:
             if len(chats[u]["messages"]) != 0:
                 mb = MessageBox(u,json.dumps(chats[u]["messages"][-1])[:20]+"...")
@@ -170,7 +163,6 @@ class ChatList(scroller):
             mb.parent = self.parent
             self.layout.addWidget(mb)
             self.chat_list[u] = mb
-
 
 class searchUserItem(QWidget):
     def __init__(self,username,firstname,lastname,parent):
@@ -231,18 +223,12 @@ class searchUserItem(QWidget):
 
         return super(searchUserItem, self).eventFilter(obj, event)
 
-
-
 class userSearchList(scroller):
     def __init__(self,parent):
         super(userSearchList, self).__init__()
         self.parent = parent
         self.localDBUsers = []
         self.remoteDBUsers = []
-
-
-
-
 
 class SearchForUser(QWidget):
     resized = pyqtSignal()
@@ -268,7 +254,7 @@ class SearchForUser(QWidget):
             self.closeList()
         else:
             self.active = True
-            print(self.parent)
+
             userpattern = self.searchinput.text()
             print(userpattern)
             if self.userlist != None or isinstance(self.userlist,userSearchList):
@@ -277,10 +263,11 @@ class SearchForUser(QWidget):
                 self.userlist = None
             self.userlist = userSearchList(self.parent)
             # self.userlist.closeb.clicked.connect(self.closeList)
-            self.parent.sideBar.layout.addWidget(self.userlist, 2, 0, 8, 3)
+            self.parent.sideBar.layout.addWidget(self.userlist, 1, 0, 8, 3)
             ulistlocal = db.getChatByUserPattern(userpattern)
             for u in ulistlocal:
                 si = searchUserItem(u['username'],u['firstname'],u['lastname'],self.parent)
+
                 self.userlist.layout.addWidget(si)
 
             self.parent.add_friend(str(userpattern))
@@ -300,6 +287,7 @@ class SearchForUser(QWidget):
     # self.input.setFixedHeight(math.ceil(self.input.document().size().height()) + math.ceil(self.input.contentsMargins().top() * 2))
     # self.m2.setFixedHeight(math.ceil(self.input.document().size().height()) + math.ceil(self.input.contentsMargins().top() * 2))
     # self.input.setFixedWidth(math.ceil(self.input.document().size().width()) + math.ceil(self.input.contentsMargins().top() * 2))
+
 class SideBar(QWidget):
 
     def __init__(self,parent):
@@ -309,12 +297,13 @@ class SideBar(QWidget):
 
         self.userSearch = SearchForUser()
         self.chatBar = ChatList()
+        self.chatBar.layout.setSpacing(0)
+        self.chatBar.layout.setContentsMargins(0, 0, 0, 0)
         self.userSearch.parent = parent
         self.chatBar.parent = parent
-        self.layout.addWidget(self.userSearch,0,0,2,3)
-        self.layout.addWidget(self.chatBar, 2, 0, 8, 3)
-        self.layout.setRowStretch(2,8)
-
+        self.layout.addWidget(self.userSearch,0,0,1,3)
+        self.layout.addWidget(self.chatBar, 1, 0, 8, 3)
+        self.layout.setRowStretch(1,8)
         self.userSearch.setStyleSheet("""
             .SearchForUser {
                 border: 20px solid black;
@@ -322,42 +311,7 @@ class SideBar(QWidget):
                 background-color: rgb(255, 255, 255);
             }
         """)
-
         self.setLayout(self.layout)
-
-
-
-
-class InputWidgets(QWidget):
-    def  __init__(self):
-        super().__init__()
-        self.parent = None
-        self.layout = QGridLayout()
-        self.reader = QTextEdit("READER")
-        self.layout.addWidget(self.reader, 0, 0, 4, 3)
-        self.messageI = QTextEdit("MESSAGE")
-        self.layout.addWidget(self.messageI, 4, 0, 4, 3)
-        self.usernameI = QTextEdit("USER")
-        self.layout.addWidget(self.usernameI, 8, 0, 4, 3)
-        self.b1 = QPushButton('Top')
-        self.b1.setStyleSheet("""
-        .QPushButton{
-            background: red;
-            height: 100%;
-            border-radius: 10px;
-            border: solid green 2px;
-        }
-        """)
-        self.layout.addWidget(self.b1, 12, 0, 3, 3)
-    # self.b1.clicked.connect(self.printer)
-        # self.b1.clicked.connect(self.execute)
-        self.setLayout(self.layout)
-
-
-    def execute(self):
-
-        self.reader.append("\n"+str(self.usernameI.toPlainText()))
-
 
 class MessageItem(QWidget):
     resized = pyqtSignal()
@@ -365,14 +319,15 @@ class MessageItem(QWidget):
     def __init__(self,message):
         super(MessageItem, self).__init__()
         self.message = message
-        self.layout = QVBoxLayout()
+        # self.layout = QVBoxLayout()
+        self.layout = QGridLayout()
         self.content = QTextEdit(message.content)
         self.content.append(message.send_date+" "+message.send_time)
-        # self.adj()
         self.content.setReadOnly(True)
         self.content.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.content.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.content.setSizePolicy(QSizePolicy.Expanding, 0)
 
         self.content.setAttribute(103)
         self.content.setStyleSheet("""
@@ -382,14 +337,14 @@ class MessageItem(QWidget):
             }
         """)
         self.layout.addWidget(self.content)
-        # self.content.setFixedHeight(math.ceil(self.content.document().size().height()) + math.ceil(self.content.contentsMargins().top() * 2))
+
         self.date = message.send_date
         self.time = message.send_time
         self.setLayout(self.layout)
-        self.adj()
         self.resized.connect(self.adj)
 
-
+    def adjHeight(self):
+        self.content.setFixedHeight(math.ceil(self.content.document().size().height()) + math.ceil(self.content.contentsMargins().top() * 2))
     def resizeEvent(self, event):
         self.resized.emit()
         return super(MessageItem, self).resizeEvent(event)
@@ -402,15 +357,17 @@ class MessageItem(QWidget):
 class MessagesArea(scroller):
     def __init__(self,username):
         super(MessagesArea, self).__init__()
+
         self.parent = None
         self.messages = []
         self.username = username
         # self.scrollArea.verticalScrollBar().setValue(self.scrollArea.verticalScrollBar().height())
         self.loadMessage(username)
         self.printMessages()
+        # self.setAutoFillBackground(True)
     def printMessages(self):
         for m in range(len(self.messages)):
-            self.layout.insertWidget(m, self.messages[m])
+            self.layout.insertWidget(m+1, self.messages[m])
     def loadMessage(self,username):
         chat = db.getChat(username)
         for i in range(len(chat.messages)):
@@ -454,12 +411,43 @@ class MessageInputArea(QWidget):
                 vertical-align: middle;
                 white-space: nowrap;
                 word-wrap: break-word;
+                height: 28px;
             }
 
         """)
 
         self.layout.addWidget(self.sendButton,0,5,2,2)
         self.input = QTextEdit()
+        self.input.setStyleSheet("""
+            .QTextEdit {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+                height: 100%;
+            }
+
+        """)
         # self.input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.input.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.input.setFixedHeight(math.ceil(50))
@@ -485,14 +473,18 @@ class UserBar(QWidget):
         self.firstname = user['firstname']
         self.lastname = user['lastname']
         self.layout = QGridLayout()
-        self.usernameLabel = QLabel('username')
-        self.firstnameLabel = QLabel('firstname')
-        self.lastnameLabel = QLabel('lastname')
+        # self.layout.setSpacing(0)
+        # self.layout.setContentsMargins(0,0,0,0)
+        self.usernameLabel = QLabel("{} {}: {}".format(self.firstname,self.lastname,self.username))
+        self.firstnameLabel = QLabel(self.firstname)
+        self.lastnameLabel = QLabel(self.lastname)
         self.usernameLabel.setStyleSheet("""
             .QLabel {
                 background: black;
                 color: white;
                 border-radius: 10px;
+                font-size: 20px;
+                height: 25px;
             }
         """)
         self.firstnameLabel.setStyleSheet("""
@@ -500,6 +492,9 @@ class UserBar(QWidget):
                 background: black;
                 color: white;
                 border-radius: 10px;
+                font-size: 20px;
+                height: 25px;
+      
             }
         """)
         self.lastnameLabel.setStyleSheet("""
@@ -507,11 +502,14 @@ class UserBar(QWidget):
                 background: black;
                 color: white;
                 border-radius: 10px;
+                font-size: 20px;
+                height: 100%; 
             }
         """)
-        self.layout.addWidget(self.usernameLabel,0,0,2,2)
-        self.layout.addWidget(self.firstnameLabel,0,2,2,2)
-        self.layout.addWidget(self.lastnameLabel,0,4,2,2)
+        self.layout.addWidget(self.usernameLabel,0,0,1,1)
+        # self.layout.addWidget(self.usernameLabel,0,0,2,2)
+        # self.layout.addWidget(self.firstnameLabel,0,2,2,2)
+        # self.layout.addWidget(self.lastnameLabel,0,4,2,2)
         self.setLayout(self.layout)
 
 class ChatWindow(QWidget):
@@ -519,32 +517,149 @@ class ChatWindow(QWidget):
         super(ChatWindow, self).__init__()
         self.parent = None
         self.username = username
-        self.layout = QGridLayout()
-        self.layout.addWidget(UserBar({'username':'user1','firstname':'firstname', 'lastname':'lastname' }))
+        self.layout = QVBoxLayout()
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0,0,0,0)
+
+        self.userBar = UserBar({'username':username,'firstname':'firstname', 'lastname':'lastname' })
+        # self.userBar.setAutoFillBackground(True)
+        self.userBar.setStyleSheet("""
+            .QWidget {
+                background: black;
+                border: none;
+                height: 100%;
+            }
+        """)
+        if username != None:
+            self.layout.addWidget(self.userBar)
         self.messagesArea = MessagesArea(username)
+
+        self.messagesArea.setStyleSheet("""
+            .QWidget {
+                background: #e7e4dc;
+                border: none;
+            
+            }
+            .QScrollBar:vertical {
+                border: 2px solid grey;
+                background: #32CC99;
+                height: 15px;
+                padding: 0 0 0 0;
+                border-spacing: 0px 0px;
+                margin: 0px;
+            }
+        """)
         self.layout.addWidget(self.messagesArea)
         self.inputArea = MessageInputArea()
-        self.layout.addWidget(self.inputArea)
+
+
+        self.inputArea.setStyleSheet("""
+            .MessageInputArea .QWidget{
+                background: #8babd8;
+            }
+        """)
+        if username != None:
+
+            self.layout.addWidget(self.inputArea)
         self.setLayout(self.layout)
+
+class AuthBar(QWidget):
+    def __init__(self,username,firstname,lastname,email,parent):
+        super(AuthBar, self).__init__()
+        self.parent = parent
+        self.layout = QVBoxLayout()
+        self.layout.addStretch()
+        self.layout.setDirection(QBoxLayout.Up)
+        self.logoutButton = QPushButton("LOGOUT")
+        self.logoutButton.setStyleSheet("height: 100%")
+        self.layout.addWidget(self.logoutButton)
+        self.username = username
+        self.firstname = firstname
+        self.lastname = lastname
+        self.email = email
+        self.firstnameLabel = QLabel(self.firstname)
+        self.lastnameLabel = QLabel(self.lastname)
+        self.emailLabel = QLabel(self.email)
+        self.usernameLabel = QLabel(self.username)
+        self.usernameLabel.setStyleSheet("height: 100%,background: white")
+        self.layout.addWidget(self.emailLabel)
+        self.layout.addWidget(self.lastnameLabel)
+        self.layout.addWidget(self.firstnameLabel)
+        self.layout.addWidget(self.usernameLabel)
+        self.setLayout(self.layout)
+        self.t = True
+        self.hide()
 
 class MainWindow(QWidget):
 
     def __init__(self,username,messagesender,messagereceiver,cryptor,socket, parent,*args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.tabName = 'mainWindow'
         self.parent = parent
         self.counter = 0
         self.dialogs = {}
         self.layout = QGridLayout()
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0,0,0,0)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
+
+        self.setStyleSheet("""
+            .MainWindow {
+                background: #98FB98;
+            }
+        """)
         self.sideBar = SideBar(self)
+        self.sideBar.layout.setSpacing(0)
+        self.sideBar.layout.setContentsMargins(0,0,0,0)
+        self.sideBar.setStyleSheet("""
+        .QWidget {
+            background: white;
+            border: none;
+
+        }
+        .QScrollBar:vertical {
+                border: 2px solid grey;
+                background: #32CC99;
+                height: 15px;
+                margin: 0px 0px 0px 0px;
+            }
+        """)
         self.sideBar.chatBar.allChats()
-        self.l3 = ChatWindow("nono")
-        self.l3.parent = self
-        self.layout.addWidget(self.sideBar, 0, 0, 1, 2)
-        self.layout.addWidget(self.l3,0,3,1,1)
+        self.l3 = ChatWindow(None)
+        self.l3.setStyleSheet("""
+            .QWidget {
+                background: white;
+                border: none;
+
+            }
+        """)
+
+        self.userBarButton = QPushButton("X")
+        self.userBarButton.clicked.connect(self.openCloseWidgetBar)
+        self.userBarButton.setStyleSheet("height: 100%")
+        self.userBarButton.setMaximumWidth(30)
+        self.userBarButton.setSizePolicy(0,QSizePolicy.Expanding)
+        self.layout.addWidget(self.userBarButton)
+        self.widgetBar = AuthBar("usernma",'fname','lname','e@mal.ru',self)
+        self.widgetBar.setStyleSheet("background: #6497b1;height: 100%")
+        self.widgetBar.logoutButton.clicked.connect(self.logout)
+        # self.widgetBar.setSizePolicy(0,0)
+        self.widgetBar.setMaximumWidth(300)
+
+        self.widgetStatus = False
+        self.layout.addWidget(self.widgetBar, 0, 2, 1, 4)
+        # self.layout.addWidget(self.sideBar, 0, 0, 1, 2)
+        # self.layout.addWidget(self.l3,0,3,1,1)
+        # self.layout.setColumnStretch(3,3)
+        self.layout.addWidget(self.userBarButton, 0, 0, 1, 1)
+        self.layout.addWidget(self.sideBar, 0, 2, 1, 4)
+        self.layout.addWidget(self.l3, 0, 6, 1, 8)
+        self.layout.setColumnStretch(6, 3)
+
         self.l3.inputArea.sendButton.clicked.connect(self.printer)
-        self.layout.setColumnStretch(3,3)
         self.setLayout(self.layout)
-        self.username = ""
+        self.username = username
         self.socket = socket
         self.cryptor = cryptor
         self.message_sender = messagesender
@@ -555,13 +670,20 @@ class MainWindow(QWidget):
         self.mbox = []
         self.tempNewChats = {}
         self.threadpool = QThreadPool()
+        self.worker = None
         self.listenPool()
 
 
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
 
-
+    def openCloseWidgetBar(self):
+        if self.widgetStatus:self.widgetBar.hide()
+        else:
+            self.widgetBar.show()
+            self.widgetBar.activateWindow()
+            self.widgetBar.raise_()
+        self.widgetStatus = not self.widgetStatus
     def openChat(self,username):
         l3 = ChatWindow(username)
         l3.parent = self
@@ -573,8 +695,8 @@ class MainWindow(QWidget):
         self.l3 = l3
         self.l3.inputArea.sendButton.clicked.connect(self.printer)
         #
-        self.layout.addWidget(self.l3,0,3,1,1)
-        self.layout.setColumnStretch(3,3)
+        self.layout.addWidget(self.l3, 0, 6, 1, 8)
+        self.layout.setColumnStretch(6, 3)
     def listRemoteSearchUsers(self,users):
         for u in users['users']:
             si = searchUserItem(u['username'],u['firstname'],u['lastname'],self)
@@ -603,31 +725,37 @@ class MainWindow(QWidget):
                 mi = MessageItem(mm)
                 self.l3.messagesArea.messages.append(mi)
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages),mi)
+                # self.l3.messagesArea.layout.addWidget(mi)
                 self.sideBar.chatBar.chat_list[username].setMessage(mm.content)
-                mi.resized.emit()
+                # mi.adjHeight()
             self.sideBar.chatBar.chat_list[username].setMessage(jm['message']['content'])
 
     def sendMessage(self,username,message):
         print(message.__dict__)
         try:
-            db.newMessage(username, {
-                'url': 'message',
-                'message': {
-                    'sender': self.username,
-                    'receiver': message.receiver,
-                    'sent': False,
-                    'id': message.id,
-                    'content': message.content,
-                    'send_date': message.send_date,
-                    'send_time': message.send_time
-                }
-            })
+
+            self.sideBar.chatBar.chat_list[username].setMessage(message.content)
             if self.l3.username == username and self.l3.username != self.username:
+                db.newMessage(username, {
+                    'url': 'message',
+                    'message': {
+                        'sender': self.username,
+                        'receiver': message.receiver,
+                        'sent': False,
+                        'id': message.id,
+                        'content': message.content,
+                        'send_date': message.send_date,
+                        'send_time': message.send_time
+                    }
+                })
                 mi = MessageItem(message)
+                if self.username == message.sender:
+                    mi.setStyleSheet("background: #08F26E")
                 self.l3.messagesArea.messages.append(mi)
 
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages), mi)
-                mi.resized.emit()
+                # self.l3.messagesArea.layout.addWidget(mi)
+                # mi.adjHeight()
 
         except Exception as e:
             print(e)
@@ -679,8 +807,23 @@ class MainWindow(QWidget):
                                 self.tempNewChats[chatUsername] = {"username": chatUsername, "message": jm}
                                 # self.addChat(chatUsername)
                                 newChat.emit(str(chatUsername))
+                        elif jm['url'] == 'logout':
+                            print(jm,'logout')
+                            url = 'settings/auth.ini'
+                            conf = configparser.ConfigParser()
+                            conf.read(url)
 
-                    print(db.chats)
+                            conf['AUTHDATA']['username'] = ''
+                            conf['AUTHDATA']['authenticated'] = ''
+                            conf['AUTHDATA']['auth_token'] = ''
+                            with open(url, 'w') as cf:
+                                conf.write(cf)
+                            # m = self.socket.recv(2048)
+                            # m = self.message_receiver.recieve_message(1, m)
+                            # print(m, 'logout m')
+                            break
+
+
 
                 except Exception as e:
                     print(e)
@@ -693,6 +836,7 @@ class MainWindow(QWidget):
                 print(e)
                 self.socket.close()
                 break
+        print('listening is end')
 
     def add_friend(self,userpattern):
         message_sender = self.message_sender
@@ -725,11 +869,44 @@ class MainWindow(QWidget):
         self.l3.inputArea.input.clear()
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
 
+    def logout(self):
+        message_sender = self.message_sender
+
+        to_send = str(self.l3.inputArea.input.toPlainText())
+
+        if to_send == '':
+            to_send = '1'
+        if to_send.lower() == 'q':
+            self.socket.close()
+
+
+        message = {'url': 'logout'}
+
+        self.socket.send(message_sender.send_message(1, json.dumps(message)))
+        # self.threadpool.cancel(self.worker)
+        # url = 'settings/auth.ini'
+        # conf = configparser.ConfigParser()
+        # conf.read(url)
+        #
+        # conf['AUTHDATA']['username'] = ''
+        # conf['AUTHDATA']['authenticated'] = ''
+        # conf['AUTHDATA']['auth_token'] = ''
+        # with open(url, 'w') as cf:
+        #     conf.write(cf)
+        # m = self.socket.recv(2048)
+        # m = self.message_receiver.recieve_message(1, m)
+        # print(m,'logout m')
+        #
+
+
     def print_output(self, s):
-        print(s)
+        print(s,'output')
 
     def thread_complete(self):
         print("THREAD COMPLETE!")
+        self.parent.switchTab()
+        # self.socket.close()
+        # sys.exit()
 
     def listenPool(self):
         worker = Worker(self.listen_for_messages) # Any other args, kwargs are passed to the run function
@@ -738,6 +915,7 @@ class MainWindow(QWidget):
         worker.signals.newChat.connect(self.addChat)
         worker.signals.newMessage.connect(self.newMessage)
         worker.signals.listFriends.connect(self.listRemoteSearchUsers)
+        self.worker = worker
         self.threadpool.start(worker)
 
 
@@ -794,6 +972,7 @@ class AppWindow(QWidget):
         self.signals.switchTab.connect(self.switchTab)
         self.signals.loginError.connect(self.TAB.reportError)
         self.signals.openCodeTab.connect(self.TAB.addCodeVerification)
+
         self.runServer()
         self.setLayout(self.layout)
         conf = configparser.ConfigParser()
@@ -810,13 +989,24 @@ class AppWindow(QWidget):
 
 
     def switchTab(self):
-        mv = MainWindow(self.username,self.message_sender,self.message_receiver,self.cryptor,self.socket,self)
-        self.layout.removeWidget(self.TAB)
-        self.TAB.deleteLater()
-        self.TAB.close()
-        self.TAB = None
-        self.TAB = mv
-        self.layout.addWidget(self.TAB)
+        if self.TAB.tabName =='authTab':
+            mv = MainWindow(self.username,self.message_sender,self.message_receiver,self.cryptor,self.socket,self)
+            self.layout.removeWidget(self.TAB)
+            self.TAB.deleteLater()
+            self.TAB.close()
+            self.TAB = None
+            self.TAB = mv
+            self.layout.addWidget(self.TAB)
+        else:
+            mv = AuthenticationTab(self)
+            self.layout.removeWidget(self.TAB)
+            self.TAB.deleteLater()
+            self.TAB.close()
+            self.TAB = None
+            self.TAB = mv
+            self.layout.addWidget(self.TAB)
+            self.signals.loginError.connect(self.TAB.reportError)
+            self.signals.openCodeTab.connect(self.TAB.addCodeVerification)
 
     def print_output(self, s):
         print(s)
@@ -858,7 +1048,7 @@ class AppWindow(QWidget):
         except ConnectionResetError as e:
             print("client disconnected",e)
             s.close()
-
+        print("key excahnge cuccess")
         # socket is ready
         # here authentication
 
@@ -1002,41 +1192,62 @@ class AppWindow(QWidget):
         message_sender = self.message_sender
         message_receiver = self.message_receiver
         cou = 3
-        while cou > 0:
-            self.socket.send(message_sender.send_message(1, json.dumps(data)))
-            m = self.socket.recv()
-            status = json.loads(message_receiver.recieve_message(1, m))
-            if status['auth_data_exchange']:
 
-                break
+        self.socket.send(message_sender.send_message(1, json.dumps(data)))
+        m = self.socket.recv()
+        status = json.loads(message_receiver.recieve_message(1, m))
+        if status['auth_data_exchange']:
+            print("sent")
+            m = self.socket.recv(2048)
+            m = message_receiver.recieve_message(1, m)
+
+            print(m, 'recived')
+            mess = json.loads(str(m))
+            print(mess)
+            if mess['auth_success']:
+                print(mess['AuthenticationUser'])
+                conf = configparser.ConfigParser()
+                conf.read('settings/auth.ini')
+                conf['AUTHDATA']['authenticated'] = 'yes'
+                conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
+                conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
+                with open('settings/auth.ini', 'w') as configfile:
+                    conf.write(configfile)
+
+                self.switchTab()
             else:
-                cou -= 1
-                if status['error'] == 50401:
-                    print('data sent unsuccessful')
+                print("failed", mess['reason'])
+                self.signals.loginError.emit(mess)
+                # raise KeyboardInterrupt
 
-        print("sent")
-        m = self.socket.recv(2048)
-        m = message_receiver.recieve_message(1, m)
-
-        print(m, 'recived')
-        mess = json.loads(str(m))
-        print(mess)
-        if mess['auth_success']:
-            print(mess['AuthenticationUser'])
-            conf = configparser.ConfigParser()
-            conf.read('settings/auth.ini')
-            conf['AUTHDATA']['authenticated'] = 'yes'
-            conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
-            conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
-            with open('settings/auth.ini', 'w') as configfile:
-                conf.write(configfile)
-
-
-            self.switchTab()
         else:
-            print("failed", mess['reason'])
-            self.signals.loginError.emit(mess)
-            # raise KeyboardInterrupt
+            cou -= 1
+            if status['error'] == 50401:
+                print('data sent unsuccessful')
+
+        # print("sent")
+        # m = self.socket.recv(2048)
+        # m = message_receiver.recieve_message(1, m)
+        #
+        # print(m, 'recived')
+        # mess = json.loads(str(m))
+        # print(mess)
+        # if mess['auth_success']:
+        #     print(mess['AuthenticationUser'])
+        #     conf = configparser.ConfigParser()
+        #     conf.read('settings/auth.ini')
+        #     conf['AUTHDATA']['authenticated'] = 'yes'
+        #     conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
+        #     conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
+        #     with open('settings/auth.ini', 'w') as configfile:
+        #         conf.write(configfile)
+        #
+        #
+        #     self.switchTab()
+        # else:
+        #     print("failed", mess['reason'])
+        #     self.signals.loginError.emit(mess)
+        #     # raise KeyboardInterrupt
 
 if __name__ == "__main__":
     RHOST = "192.168.1.122"
@@ -1048,12 +1259,14 @@ if __name__ == "__main__":
     window.show()
     app.exec_()
     window.socket.close()
+    sys.exit()
 
 #
 # if __name__ == "__main__":
 #     app = QApplication([])
 #
-#     window = AuthenticationTab(None)
+#     # window = AuthBar("usernma",'fname','lname','e@mal.ru',None)
+#     window = MainWindow('username',None,None,None,None,None)
 #
 #     window.show()
 #     app.exec_()
