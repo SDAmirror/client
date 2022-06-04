@@ -105,10 +105,7 @@ class MessageBox(QWidget):
         return super(MessageBox, self).eventFilter(obj, event)
     def setMessage(self,message):
         self.messsageLabel.setText(message[:20]+"...")
-    #
-    # def mousePressEvent(self, QMouseEvent):
-    #     # print("self.parent.openChat(self.username)",self.parent)
-    #     self.parent.openChat(self.username)
+
 
 class scroller(QWidget):
     def __init__(self):
@@ -134,6 +131,34 @@ class ChatList(scroller):
         self.parent = None
         self.chat_list = {}
         self.counter = 0
+        self.setStyleSheet("""
+            .ChatList {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+            }
+        """)
         # self.allChats()
 
     def addChat(self,messagebox):
@@ -159,7 +184,7 @@ class ChatList(scroller):
             if len(chats[u]["messages"]) != 0:
                 mb = MessageBox(u,json.dumps(chats[u]["messages"][-1])[:20]+"...")
             else:
-                mb = MessageBox(u,u)
+                mb = MessageBox(u,'')
             mb.parent = self.parent
             self.layout.addWidget(mb)
             self.chat_list[u] = mb
@@ -170,6 +195,7 @@ class searchUserItem(QWidget):
         self.username = username
         self.firstname = firstname
         self.lastname = lastname
+
         self.parent = parent
         self.box = QGridLayout()
         self.userLabel = QLineEdit(self.username)
@@ -205,6 +231,7 @@ class searchUserItem(QWidget):
         if event.type() == QEvent.MouseButtonPress:
             if event.buttons() & Qt.LeftButton:
                 db.addChat(self.username)
+                db.updateUserInfo(self.username,{'firstname':self.firstname,'lastname':self.lastname})
                 self.parent.senders.append(self.username)
 
                 f = MessageBox(self.username,"")
@@ -241,8 +268,65 @@ class SearchForUser(QWidget):
         self.layout.setColumnStretch(1, 2)
 
         self.sendButton = QPushButton("SEARCH")
+        self.sendButton.setStyleSheet("""
+            .QPushButton {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+            }
+        """)
         self.layout.addWidget(self.sendButton, 0, 5, 2, 2)
         self.searchinput = QLineEdit()
+        self.searchinput.setStyleSheet("""
+            .QLineEdit {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+                
+            }
+        """)
         self.layout.addWidget(self.searchinput, 0, 0, 2, 5)
         self.setLayout(self.layout)
         self.sendButton.clicked.connect(self.listUsers)
@@ -309,6 +393,34 @@ class SideBar(QWidget):
                 border: 20px solid black;
                 border-radius: 10px;
                 background-color: rgb(255, 255, 255);
+            }
+        """)
+        self.setStyleSheet("""
+            SideBar {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
             }
         """)
         self.setLayout(self.layout)
@@ -457,6 +569,12 @@ class MessageInputArea(QWidget):
         self.resized.connect(self.adj)
         self.textEnter.connect(self.adj)
         self.input.textChanged.connect(self.adj)
+        self.setStyleSheet("""
+            .QWidget{
+                background: #8babd8;
+                border: solid 2px red;
+            }
+        """)
 
     def resizeEvent(self, event):
         self.resized.emit()
@@ -472,19 +590,39 @@ class UserBar(QWidget):
         self.username = user['username']
         self.firstname = user['firstname']
         self.lastname = user['lastname']
+        self.mcount = user['messagecount']
         self.layout = QGridLayout()
         # self.layout.setSpacing(0)
         # self.layout.setContentsMargins(0,0,0,0)
-        self.usernameLabel = QLabel("{} {}: {}".format(self.firstname,self.lastname,self.username))
+        self.usernameLabel = QLabel("{}".format("{} {}: {}  ({})".format(self.firstname, self.lastname, self.username, self.mcount)))
         self.firstnameLabel = QLabel(self.firstname)
         self.lastnameLabel = QLabel(self.lastname)
         self.usernameLabel.setStyleSheet("""
             .QLabel {
-                background: black;
-                color: white;
-                border-radius: 10px;
-                font-size: 20px;
-                height: 25px;
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border-radius: 6px;
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
             }
         """)
         self.firstnameLabel.setStyleSheet("""
@@ -520,24 +658,28 @@ class ChatWindow(QWidget):
         self.layout = QVBoxLayout()
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(0,0,0,0)
-
-        self.userBar = UserBar({'username':username,'firstname':'firstname', 'lastname':'lastname' })
-        # self.userBar.setAutoFillBackground(True)
-        self.userBar.setStyleSheet("""
+        if username != None:
+            self.userdata = db.getUserInfo(self.username)
+            self.userBar = UserBar({'username':username,'firstname':self.userdata.firstname, 'lastname':self.userdata.lastname ,'messagecount':self.userdata.messagecount})
+            # self.userBar.setAutoFillBackground(True)
+            self.userBar.setStyleSheet("""
             .QWidget {
                 background: black;
                 border: none;
                 height: 100%;
             }
         """)
-        if username != None:
+
             self.layout.addWidget(self.userBar)
         self.messagesArea = MessagesArea(username)
+        self.messagesArea.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         self.messagesArea.setStyleSheet("""
             .QWidget {
-                background: #e7e4dc;
+                background: #0090ab;
                 border: none;
+                height: 100%;
+                widht: 100%;
             
             }
             .QScrollBar:vertical {
@@ -553,35 +695,40 @@ class ChatWindow(QWidget):
         self.inputArea = MessageInputArea()
 
 
-        self.inputArea.setStyleSheet("""
-            .MessageInputArea .QWidget{
-                background: #8babd8;
-            }
-        """)
+        # self.inputArea.setStyleSheet("""
+        #     .QWidget{
+        #         background: #8babd8;
+        #         border: solid 2px red;
+        #     }
+        # """)
         if username != None:
 
             self.layout.addWidget(self.inputArea)
         self.setLayout(self.layout)
 
 class AuthBar(QWidget):
-    def __init__(self,username,firstname,lastname,email,parent):
+    def __init__(self,parent):
         super(AuthBar, self).__init__()
         self.parent = parent
         self.layout = QVBoxLayout()
         self.layout.addStretch()
         self.layout.setDirection(QBoxLayout.Up)
         self.logoutButton = QPushButton("LOGOUT")
-        self.logoutButton.setStyleSheet("height: 100%")
+        # self.logoutButton.setStyleSheet("height: 100%;")
         self.layout.addWidget(self.logoutButton)
-        self.username = username
-        self.firstname = firstname
-        self.lastname = lastname
-        self.email = email
+        url = 'settings/auth.ini'
+        conf = configparser.ConfigParser()
+        conf.read(url)
+
+        self.username = conf['AUTHDATA']['username']
+        self.firstname = conf['AUTHDATA']['firstname']
+        self.lastname = conf['AUTHDATA']['lastname']
+        self.email = conf['AUTHDATA']['email']
         self.firstnameLabel = QLabel(self.firstname)
         self.lastnameLabel = QLabel(self.lastname)
         self.emailLabel = QLabel(self.email)
         self.usernameLabel = QLabel(self.username)
-        self.usernameLabel.setStyleSheet("height: 100%,background: white")
+        # self.usernameLabel.setStyleSheet("height: 100%,background: white")
         self.layout.addWidget(self.emailLabel)
         self.layout.addWidget(self.lastnameLabel)
         self.layout.addWidget(self.firstnameLabel)
@@ -606,7 +753,7 @@ class MainWindow(QWidget):
 
         self.setStyleSheet("""
             .MainWindow {
-                background: #98FB98;
+                background: #0090ab;
             }
         """)
         self.sideBar = SideBar(self)
@@ -627,36 +774,64 @@ class MainWindow(QWidget):
         """)
         self.sideBar.chatBar.allChats()
         self.l3 = ChatWindow(None)
-        self.l3.setStyleSheet("""
-            .QWidget {
-                background: white;
-                border: none;
-
-            }
-        """)
+        self.l3.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+        # self.l3.setStyleSheet("""
+        #     .QWidget {
+        #         background: white;
+        #         border: none;
+        #         hight: 100%;
+        #         widht: 100%;
+        #
+        #     }
+        # """)
 
         self.userBarButton = QPushButton("X")
         self.userBarButton.clicked.connect(self.openCloseWidgetBar)
-        self.userBarButton.setStyleSheet("height: 100%")
-        self.userBarButton.setMaximumWidth(30)
+        self.userBarButton.setStyleSheet("""
+            .QPushButton {
+                appearance: none;
+                background-color: #FAFBFC;
+                border: 1px solid rgba(27, 31, 35, 0.15);
+                border: #2EFF2E solid 1px;
+                box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                box-sizing: border-box;
+                color: #24292E;
+                cursor: pointer;
+                display: inline-block;
+                font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+              
+                font-weight: 500;
+                line-height: 20px;
+                list-style: none;
+                padding: 6px 16px;
+                position: relative;
+                transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                vertical-align: middle;
+                white-space: nowrap;
+                word-wrap: break-word;
+                height: 100%;
+            }
+        """)
+
+        self.userBarButton.setMaximumWidth(40)
         self.userBarButton.setSizePolicy(0,QSizePolicy.Expanding)
-        self.layout.addWidget(self.userBarButton)
-        self.widgetBar = AuthBar("usernma",'fname','lname','e@mal.ru',self)
+        self.layout.addWidget(self.userBarButton,0,0,1,1)
+        self.widgetBar = AuthBar(self)
+
         self.widgetBar.setStyleSheet("background: #6497b1;height: 100%")
         self.widgetBar.logoutButton.clicked.connect(self.logout)
         # self.widgetBar.setSizePolicy(0,0)
         self.widgetBar.setMaximumWidth(300)
-
         self.widgetStatus = False
+
         self.layout.addWidget(self.widgetBar, 0, 2, 1, 4)
-        # self.layout.addWidget(self.sideBar, 0, 0, 1, 2)
-        # self.layout.addWidget(self.l3,0,3,1,1)
-        # self.layout.setColumnStretch(3,3)
         self.layout.addWidget(self.userBarButton, 0, 0, 1, 1)
         self.layout.addWidget(self.sideBar, 0, 2, 1, 4)
         self.layout.addWidget(self.l3, 0, 6, 1, 8)
         self.layout.setColumnStretch(6, 3)
-
         self.l3.inputArea.sendButton.clicked.connect(self.printer)
         self.setLayout(self.layout)
         self.username = username
@@ -664,7 +839,7 @@ class MainWindow(QWidget):
         self.cryptor = cryptor
         self.message_sender = messagesender
         self.message_receiver = messagereceiver
-        self.senders = []
+        self.senders = list(db.chats.keys())
         self.counter = 0
         self.newmessages = {}
         self.mbox = []
@@ -672,8 +847,6 @@ class MainWindow(QWidget):
         self.threadpool = QThreadPool()
         self.worker = None
         self.listenPool()
-
-
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
 
@@ -687,7 +860,6 @@ class MainWindow(QWidget):
     def openChat(self,username):
         l3 = ChatWindow(username)
         l3.parent = self
-        l3.messagesArea.loadMessage(username)
         self.l3.deleteLater()
 
         self.l3.close()
@@ -703,15 +875,13 @@ class MainWindow(QWidget):
             self.sideBar.userSearch.userlist.layout.addWidget(si)
             self.sideBar.userSearch.userlist.remoteDBUsers.append(si)
 
-    def addChat(self, username):
+    def addChat(self, user):
 
-        # f = QTextEdit(f"we {n} {edits[-1]}")
-        # f = QTextEdit(f"we {self.tempNewChats[n]['username']}")
-        f = MessageBox(f"{self.tempNewChats[username]['username']}",f"{json.dumps(self.tempNewChats[username]['message'])}")
+
+        f = MessageBox(f"{self.tempNewChats[user]['username']}", f"{json.dumps(self.tempNewChats[user]['message'])}")
         f.parent = self
-        # self.chatBar.chat_list[username]=f
-        # self.chatBar.layout.addWidget(f)
-        self.sideBar.chatBar.chat_list[username]=f
+
+        self.sideBar.chatBar.chat_list[user]=f
         self.sideBar.chatBar.layout.addWidget(f)
 
     def newMessage(self,username,message):
@@ -727,7 +897,7 @@ class MainWindow(QWidget):
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages),mi)
                 # self.l3.messagesArea.layout.addWidget(mi)
                 self.sideBar.chatBar.chat_list[username].setMessage(mm.content)
-                # mi.adjHeight()
+
             self.sideBar.chatBar.chat_list[username].setMessage(jm['message']['content'])
 
     def sendMessage(self,username,message):
@@ -754,8 +924,6 @@ class MainWindow(QWidget):
                 self.l3.messagesArea.messages.append(mi)
 
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages), mi)
-                # self.l3.messagesArea.layout.addWidget(mi)
-                # mi.adjHeight()
 
         except Exception as e:
             print(e)
@@ -816,6 +984,9 @@ class MainWindow(QWidget):
                             conf['AUTHDATA']['username'] = ''
                             conf['AUTHDATA']['authenticated'] = ''
                             conf['AUTHDATA']['auth_token'] = ''
+                            conf['AUTHDATA']['email'] = ''
+                            conf['AUTHDATA']['firstname'] = ''
+                            conf['AUTHDATA']['lastname'] = ''
                             with open(url, 'w') as cf:
                                 conf.write(cf)
                             # m = self.socket.recv(2048)
@@ -929,6 +1100,8 @@ class AuthSignals(QObject):
     result = pyqtSignal(object)
     start = pyqtSignal(dict)
     opencodetab = pyqtSignal()
+    loginError = pyqtSignal(dict)
+    switchTab = pyqtSignal()
 class AuthWorker(QRunnable):
 
     def __init__(self, fn, *args, **kwargs):
@@ -937,7 +1110,10 @@ class AuthWorker(QRunnable):
         self.args = args
         self.kwargs = kwargs
         self.signals = AuthSignals()
-        self.kwargs['start']  = self.signals.start
+        self.kwargs['opencodetab']  = self.signals.opencodetab
+        self.kwargs['loginError']  = self.signals.loginError
+        self.kwargs['switchTab']  = self.signals.switchTab
+
 
 
     @pyqtSlot()
@@ -985,9 +1161,7 @@ class AppWindow(QWidget):
                 "authorization_data": [conf['AUTHDATA']['username'], ''],
             })
         self.threadpool = QThreadPool()
-
-
-
+        self.AuthHandlerSwitch = False
     def switchTab(self):
         if self.TAB.tabName =='authTab':
             mv = MainWindow(self.username,self.message_sender,self.message_receiver,self.cryptor,self.socket,self)
@@ -1051,28 +1225,97 @@ class AppWindow(QWidget):
         print("key excahnge cuccess")
         # socket is ready
         # here authentication
-
-    def registerPool(self,data):
-        self.username = data['registration_data']['username']
-        message_sender = self.message_sender
+    def registrationHandler(self,opencodetab,loginError,switchTab):
+        print("i am listening registrationHandler")
+        global db
         message_receiver = self.message_receiver
-        cou = 3
-        while cou > 0:
-            self.socket.send(message_sender.send_message(1, json.dumps(data)))
-            m = self.socket.recv()
-            status = json.loads(message_receiver.recieve_message(1, m))
-            if status['auth_data_exchange']:
-                print('data sent sucsessfully')
-                break
-            else:
-                cou -= 1
-                if status['error'] == 50401:
-                    print('data sent unsuccessful')
+        while self.AuthHandlerSwitch:
+            # DB, UI, response.
+            try:
+                message = self.socket.recv(2048)
+                message = message_receiver.recieve_message(1, message)
 
-        print("sent")
-        pass
-        worker = AuthWorker(self.registerClientCode)
-        worker.signals.opencodetab.connect(self.TAB)
+                try:
+                    jm = json.loads(str(message))
+                    if "auth_data_exchange" in jm.keys():
+                        if jm["auth_data_exchange"]:
+                            continue
+                        else:
+                            print("data not sent")
+
+                    {
+                        "50200": "status OK",
+                        "50242": "verification code sent",
+                        "50243": "verification code valid",
+                        "50244": "registration success",
+                        "50245": "authentication success",
+
+                        "50441": "username taken",
+                        "50442": "failure wrong email format",
+                        "50443": "failure code validation",
+                        "50444": "failure code receive",
+                        "50445": "failure email",
+
+                        "50541": "server error"
+                    }
+                    if "url" in list(jm.keys()):
+                        if jm["url"] == "registration":
+                            if not jm["auth_success"]:
+                                if jm["statusCode"] == 50441:
+                                    loginError.emit({"reason":jm["message"]})
+                                elif jm["statusCode"] == 50442:
+                                    loginError.emit({"reason":jm["message"]})
+                                elif jm["statusCode"] == 50443:
+                                    loginError.emit({"reason":jm["message"]})
+                                elif jm["statusCode"] == 50444:
+                                    loginError.emit({"reason":jm["message"]})
+                                elif jm["statusCode"] == 50445:
+                                    loginError.emit({"reason":jm["message"]})
+
+                            else:
+                                if jm["statusCode"] == 50242:
+                                    loginError.emit({"reason": jm["message"]})
+                                    opencodetab.emit()
+                                elif jm["statusCode"] == 50245:
+                                    conf = configparser.ConfigParser()
+                                    conf.read('settings/auth.ini')
+                                    conf['AUTHDATA']['authenticated'] = 'yes'
+                                    conf['AUTHDATA']['auth_token'] = jm['AuthenticationUser']['authentication_token']
+                                    conf['AUTHDATA']['username'] = jm['AuthenticationUser']['user']['username']
+                                    conf['AUTHDATA']['email'] = jm['AuthenticationUser']['user']['email']
+                                    conf['AUTHDATA']['firstname'] = jm['AuthenticationUser']['user']['first_name']
+                                    conf['AUTHDATA']['lastname'] = jm['AuthenticationUser']['user']['last_name']
+                                    with open('settings/auth.ini', 'w') as configfile:
+                                        conf.write(configfile)
+                                    self.AuthHandlerSwitch = False
+                                    switchTab.emit()
+                                    break
+                                elif jm["statusCode"] == 50541:
+                                    loginError.emit({"reason":jm["message"]})
+
+
+
+
+                except Exception as e:
+                    print(e)
+                if not message:
+                    print("closed")
+                    break
+                print(message)
+
+            except Exception as e:
+                print(e)
+
+                break
+        print('listening registrationHandler is end')
+
+    def registerPool(self):
+        worker = AuthWorker(self.registrationHandler)
+        worker.signals.opencodetab.connect(self.TAB.addCodeVerification)
+        worker.signals.loginError.connect(self.TAB.reportError)
+        worker.signals.switchTab.connect(self.switchTab)
+
+        self.threadpool.start(worker)
 
     def registerClientCode(self):
         message_sender = self.message_sender
@@ -1102,62 +1345,65 @@ class AppWindow(QWidget):
         #     # raise KeyboardInterrupt
     def sendCode(self,code):
         message_sender = self.message_sender
-        message_receiver = self.message_receiver
+        # message_receiver = self.message_receiver
 
         self.socket.send(message_sender.send_message(1, json.dumps({'code':code})))
         print("sent")
-        m = self.socket.recv(2048)
-        m = message_receiver.recieve_message(1, m)
-        try:
-            m = json.loads(str(m))
-            if m['url'] == 'registration':
-                if 'auth_success' in m.keys():
-                    print(m)
-                    if m['auth_success']:
-                        print(m['AuthenticationUser'])
-                        conf = configparser.ConfigParser()
-                        conf.read('settings/auth.ini')
-                        conf['AUTHDATA']['authenticated'] = 'yes'
-                        conf['AUTHDATA']['auth_token'] = m['AuthenticationUser']['authentication_token']
-                        conf['AUTHDATA']['username'] = m['AuthenticationUser']['user']['username']
-                        with open('settings/auth.ini', 'w') as configfile:
-                            conf.write(configfile)
-                        self.switchTab()
-                    else:
-                        if 'AuthenticationUser' in m.keys():
-
-                            print("failed, but registred")
-                        else:
-                            print(m)
-                        # self.signals.loginError.emit(m)
-
-                if not m['auth_data_exchange']:
-                    print(m['error'])
-
-        except json.JSONDecodeError as e:
-            print(e)
-        except Exception as e:
-            print(e,892)
-        print(m)
+        # m = self.socket.recv(2048)
+        # m = message_receiver.recieve_message(1, m)
+        # try:
+        #     m = json.loads(str(m))
+        #     if m['url'] == 'registration':
+        #         if 'auth_success' in m.keys():
+        #             print(m)
+        #             if m['auth_success']:
+        #                 print(m['AuthenticationUser'])
+        #                 conf = configparser.ConfigParser()
+        #                 conf.read('settings/auth.ini')
+        #                 conf['AUTHDATA']['authenticated'] = 'yes'
+        #                 conf['AUTHDATA']['auth_token'] = m['AuthenticationUser']['authentication_token']
+        #                 conf['AUTHDATA']['username'] = m['AuthenticationUser']['user']['username']
+        #                 conf['AUTHDATA']['email'] = m['AuthenticationUser']['user']['email']
+        #                 conf['AUTHDATA']['firstname'] = m['AuthenticationUser']['user']['first_name']
+        #                 conf['AUTHDATA']['lastname'] = m['AuthenticationUser']['user']['last_name']
+        #                 with open('settings/auth.ini', 'w') as configfile:
+        #                     conf.write(configfile)
+        #                 self.switchTab()
+        #             else:
+        #                 if 'AuthenticationUser' in m.keys():
+        #
+        #                     print("failed, but registred")
+        #                 else:
+        #                     print(m)
+        #                 # self.signals.loginError.emit(m)
+        #
+        #         if not m['auth_data_exchange']:
+        #             print(m['error'])
+        #
+        # except json.JSONDecodeError as e:
+        #     print(e)
+        # except Exception as e:
+        #     print(e,1350)
+        # print(m)
     def registerClient(self,data):
         self.username = data['registration_data']['username']
         message_sender = self.message_sender
         message_receiver = self.message_receiver
-        cou = 3
-        while cou > 0:
-            self.socket.send(message_sender.send_message(1, json.dumps(data)))
-            m = self.socket.recv()
-            status = json.loads(message_receiver.recieve_message(1, m))
-            if status['auth_data_exchange']:
-                print('data sent sucsessfully')
-                break
-            else:
-                cou -= 1
-                if status['error'] == 50401:
-                    print('data sent unsuccessful')
-
-        print("sent")
-        self.TAB.addCodeVerification()
+        self.socket.send(message_sender.send_message(1, json.dumps(data)))
+        # cou = 3
+        # m = self.socket.recv()
+        # status = json.loads(message_receiver.recieve_message(1, m))
+        # print(status)
+        # if status['auth_data_exchange']:
+        #     print('data sent sucsessfully')
+        #
+        # else:
+        #     cou -= 1
+        #     if status['error'] == 50400:
+        #         print('data sent unsuccessful')
+        #
+        # print("sent")
+        # self.TAB.addCodeVerification()
 
         # while True:
         #     code = input('code')
@@ -1211,6 +1457,9 @@ class AppWindow(QWidget):
                 conf['AUTHDATA']['authenticated'] = 'yes'
                 conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
                 conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
+                conf['AUTHDATA']['email'] = mess['AuthenticationUser']['user']['email']
+                conf['AUTHDATA']['firstname'] = mess['AuthenticationUser']['user']['first_name']
+                conf['AUTHDATA']['lastname'] = mess['AuthenticationUser']['user']['last_name']
                 with open('settings/auth.ini', 'w') as configfile:
                     conf.write(configfile)
 
@@ -1222,7 +1471,7 @@ class AppWindow(QWidget):
 
         else:
             cou -= 1
-            if status['error'] == 50401:
+            if status['error'] == 50400:
                 print('data sent unsuccessful')
 
         # print("sent")
@@ -1261,7 +1510,7 @@ if __name__ == "__main__":
     window.socket.close()
     sys.exit()
 
-#
+
 # if __name__ == "__main__":
 #     app = QApplication([])
 #

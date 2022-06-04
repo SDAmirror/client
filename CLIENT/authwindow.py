@@ -1,3 +1,5 @@
+import math
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -7,12 +9,72 @@ from functools import partial
 
 
 class AuthAlert(QWidget):
+
+    resized = pyqtSignal()
+
     def __init__(self,parent):
         super(AuthAlert, self).__init__()
         self.layout = QGridLayout()
         self.messageBox = QTextEdit("alert")
-        self.layout.addWidget(self.messageBox,0,0,1,1)
+        self.messageBox.setStyleSheet("""
+
+                    .QTextEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: red;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        # self.messageBox.setReadOnly(True)
+        self.messageBox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.messageBox.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.messageBox.setSizePolicy(QSizePolicy.Expanding, 0)
+
+        self.messageBox.setAttribute(103)
+
         self.setLayout(self.layout)
+
+        self.layout.addWidget(self.messageBox,0,0,1,1)
+        self.resized.connect(self.adj)
+        self.messageBox.textChanged.connect(self.adj)
+
+    def adjHeight(self):
+        self.messageBox.setFixedHeight(
+            math.ceil(self.messageBox.document().size().height()) + math.ceil(self.messageBox.contentsMargins().top() * 2))
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super(AuthAlert, self).resizeEvent(event)
+
+    # resize message items
+    def adj(self):
+        # self.dateWidget.setFixedHeight(math.ceil(self.dateWidget.document().size().height()) + math.ceil(self.dateWidget.contentsMargins().top() * 2))
+        self.messageBox.setFixedHeight(
+            math.ceil(self.messageBox.document().size().height()) + math.ceil(self.messageBox.contentsMargins().top() * 2))
+
 
 class LoginTab(QWidget):
     def __init__(self,parent):
@@ -21,7 +83,70 @@ class LoginTab(QWidget):
         self.tabName = "login"
         self.layout = QGridLayout()
         self.username = QLineEdit("user1")
+        self.username.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
         self.password = QLineEdit("password1")
+        self.password.setEchoMode(QLineEdit.Password)
+        self.password.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
         self.layout.addWidget(QLabel("username"),0,0,1,1)
         self.layout.addWidget(self.username,0,1,1,1)
         self.layout.addWidget(QLabel("password"),1,0,1,1)
@@ -31,7 +156,7 @@ class LoginTab(QWidget):
         
             .QPushButton {
               appearance: none;
-              background-color: #FAFBFC;
+              background-color: green;
               border: 1px solid rgba(27, 31, 35, 0.15);
               border-radius: 6px;
               border: #2EFF2E solid 1px;
@@ -73,7 +198,7 @@ class LoginTab(QWidget):
                                       border: #2EFF2E solid 1px;
                                       box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
                                       box-sizing: border-box;
-                                      color: #24292E;
+                                      color: blue;
                                       cursor: pointer;
                                       display: inline-block;
                                       font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -129,6 +254,195 @@ class RegistrationTab(QWidget):
         self.firstname = QLineEdit()
         self.lastname = QLineEdit()
         self.email = QLineEdit()
+        self.username.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        self.password.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        self.password.setEchoMode(QLineEdit.Password)
+        self.password_repeat.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        self.password_repeat.setEchoMode(QLineEdit.Password)
+        self.firstname.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        self.lastname.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+        self.email.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
+
         self.layout.addWidget(QLabel("username"), 0, 0, 1, 1)
         self.layout.addWidget(self.username, 0, 1, 1, 1)
         self.layout.addWidget(QLabel("password"), 1, 0, 1, 1)
@@ -141,12 +455,12 @@ class RegistrationTab(QWidget):
         self.layout.addWidget(self.lastname, 4, 1, 1, 1)
         self.layout.addWidget(QLabel("email"), 5, 0, 1, 1)
         self.layout.addWidget(self.email, 5, 1, 1, 1)
-        self.sendButton = QPushButton("REGISTRATION")
+        self.sendButton = QPushButton("Registration")
         self.sendButton.setStyleSheet("""
 
                     .QPushButton {
                       appearance: none;
-                      background-color: #FAFBFC;
+                      background-color: green;
                       border: 1px solid rgba(27, 31, 35, 0.15);
                       border-radius: 6px;
                       border: #2EFF2E solid 1px;
@@ -189,7 +503,7 @@ class RegistrationTab(QWidget):
                                       border: #2EFF2E solid 1px;
                                       box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
                                       box-sizing: border-box;
-                                      color: #24292E;
+                                      color: blue;
                                       cursor: pointer;
                                       display: inline-block;
                                       font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -252,6 +566,37 @@ class CodeVerification(QWidget):
         self.layout = QGridLayout()
         self.layout.addWidget(QLabel("CODE"), 0, 0, 1, 1)
         self.codeInput = QLineEdit()
+        self.codeInput.setStyleSheet("""
+
+                    .QLineEdit {
+                      appearance: none;
+                      background-color: #FAFBFC;
+                      border: 1px solid rgba(27, 31, 35, 0.15);
+                      border-radius: 6px;
+                      border: #2EFF2E solid 1px;
+                      box-shadow: rgba(27, 31, 35, 0.04) 0 1px 0, rgba(255, 255, 255, 0.25) 0 1px 0 inset;
+                      box-sizing: border-box;
+                      color: #24292E;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+                      font-size: 14px;
+                      font-weight: 500;
+                      line-height: 20px;
+                      list-style: none;
+                      padding: 6px 16px;
+                      position: relative;
+                      transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      vertical-align: middle;
+                      white-space: nowrap;
+                      word-wrap: break-word;
+                    }
+
+
+                """)
         self.layout.addWidget(self.codeInput,0,1,1,1)
         self.sendButton = QPushButton("SEND")
         self.sendButton.setStyleSheet("""
@@ -305,15 +650,24 @@ class AuthenticationTab(QWidget):
         self.layout.addWidget(self.alert,0,0,1,1)
         self.tab = LoginTab(parent)
         self.layout.addWidget(self.tab,1,0,1,1)
-        self.setLayout(self.layout)
         self.tab.switchButton.clicked.connect(self.switchTab)
 
+        self.setLayout(self.layout)
 
     def switchTab(self):
         if self.tab.tabName == "login":
             tab = RegistrationTab(self.parent)
+            self.parent.AuthHandlerSwitch = True
+            self.parent.registerPool()
         elif self.tab.tabName == "register":
             tab = LoginTab(self.parent)
+            self.parent.AuthHandlerSwitch = False
+        # if self.codeVerification != None:
+        #     self.layout.removeWidget(self.codeVerification)
+        #     self.codeVerification.deleteLater()
+        #     self.codeVerification.close()
+        #     self.codeVerification = None
+
         self.layout.removeWidget(self.tab)
         self.tab.deleteLater()
         self.tab.close()
@@ -322,12 +676,15 @@ class AuthenticationTab(QWidget):
         self.tab.switchButton.clicked.connect(self.switchTab)
         self.layout.addWidget(self.tab,1,0,1,1)
 
+
     def processAuthentication(self):
         pass
     def addCodeVerification(self):
+        print('addCodeVerification')
         self.codeVerification = CodeVerification(self.parent)
-        self.layout.addWidget(self.codeVerification,2,0,1,1)
+        self.layout.addWidget(self.codeVerification, 2, 0, 1, 1)
         self.update()
+        print('addCodeVerification2')
     def reportError(self,error):
         self.alert.messageBox.setText(error['reason'])
 

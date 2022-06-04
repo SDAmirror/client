@@ -27,6 +27,12 @@ class MessageModel:
         self.send_time = send_time
         self.sent = sent
 
+class UserInfo:
+    def __init__(self,username,firstname,lastname,messagecount):
+        self.username = username
+        self.firstname = firstname
+        self.lastname = lastname
+        self.messagecount = messagecount
 
 class Chat:
     def __init__(self,username):
@@ -54,6 +60,24 @@ class DB:
             chat.messages.append(MessageModel(i['message']['id'], i['message']['content'], i['message']['sender'], i['message']['receiver'], i['message']['send_date'], i['message']['send_time'], i['message']['sent']))
 
         return chat
+
+    def updateUserInfo(self,username,userdata):
+        for key in list(userdata.keys()):
+            if userdata[key] != None:
+                self.chats[username][key] = userdata[key]
+
+    def getUserInfo(self,username):
+        ui = self.chats[username]
+        if 'firstname' in ui.keys():
+            fn = ui['firstname']
+            ln = ui['lastname']
+        else:
+            fn = ''
+            ln = ''
+        mc = len(ui['messages'])
+
+        return UserInfo(username,fn,ln,mc)
+
 
 
     def getAllChats(self):

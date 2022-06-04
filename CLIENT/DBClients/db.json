@@ -1,0 +1,61 @@
+{
+  "user1": {
+    "messages": [
+      {
+        "url": "message",
+        "message": {
+          "sender": "user1",
+          "receiver": "user1",
+          "sent": true,
+          "id": "9d9afbee-fdd4-41a4-93fd-0bf944b74310",
+          "content": "hi ",
+          "send_date": "2022-06-03",
+          "send_time": "23:26:16"
+        }
+      },
+      {
+        "url": "message",
+        "message": {
+          "sender": "user1",
+          "receiver": "user1",
+          "sent": true,
+          "id": "9ee8830d-6b65-48f2-a290-5f529a9a89f6",
+          "content": "how are you",
+          "send_date": "2022-06-03",
+          "send_time": "23:26:23"
+        }
+      }
+    ]
+  },
+  "user3": {
+    "messages": [
+      {
+        "url": "message",
+        "message": {
+          "sender": "user1",
+          "receiver": "user3",
+          "sent": true,
+          "id": "8b818670-d079-47aa-98d6-69efb38f7d66",
+          "content": "hello",
+          "send_date": "2022-06-03",
+          "send_time": "23:26:34"
+        }
+      },
+      {
+        "AuthenticationUser": {
+          "user": {
+            "id": "79a07764-43cb-42d4-b64f-2cd114924515",
+            "username": "user1",
+            "email": "flamehst@mail.ru",
+            "first_name": "Damir",
+            "last_name": "Sadykov",
+            "is_active": true
+          },
+          "authentication_token": "debac2a2-929e-4706-8048-6268e2541fd0"
+        },
+        "auth_success": true
+      }
+    ]
+  }
+}
+
