@@ -15,7 +15,7 @@ class AuthAlert(QWidget):
     def __init__(self,parent):
         super(AuthAlert, self).__init__()
         self.layout = QGridLayout()
-        self.messageBox = QTextEdit("alert")
+        self.messageBox = QTextEdit()
         self.messageBox.setStyleSheet("""
 
                     .QTextEdit {
@@ -47,7 +47,7 @@ class AuthAlert(QWidget):
 
 
                 """)
-        # self.messageBox.setReadOnly(True)
+        self.messageBox.setReadOnly(True)
         self.messageBox.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.messageBox.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -55,9 +55,9 @@ class AuthAlert(QWidget):
 
         self.messageBox.setAttribute(103)
 
+        self.layout.addWidget(self.messageBox,0,0,1,1)
         self.setLayout(self.layout)
 
-        self.layout.addWidget(self.messageBox,0,0,1,1)
         self.resized.connect(self.adj)
         self.messageBox.textChanged.connect(self.adj)
 
@@ -82,7 +82,7 @@ class LoginTab(QWidget):
         self.parent = parent
         self.tabName = "login"
         self.layout = QGridLayout()
-        self.username = QLineEdit("user1")
+        self.username = QLineEdit()
         self.username.setStyleSheet("""
 
                     .QLineEdit {
@@ -114,7 +114,7 @@ class LoginTab(QWidget):
 
 
                 """)
-        self.password = QLineEdit("password1")
+        self.password = QLineEdit()
         self.password.setEchoMode(QLineEdit.Password)
         self.password.setStyleSheet("""
 
@@ -223,12 +223,12 @@ class LoginTab(QWidget):
         self.layout.setRowStretch(2,1)
         self.layout.setRowStretch(3,1)
         self.layout.setRowStretch(4,1)
-        self.setLayout(self.layout)
         self.setStyleSheet("""
                   .LoginTab {
                       background: #DCEEC8;
                   }
               """)
+        self.setLayout(self.layout)
     def prepareData(self):
 
         data = {
@@ -542,18 +542,19 @@ class RegistrationTab(QWidget):
     def prepareData(self):
         if not self.password.text().strip() == self.password_repeat.text().strip():
             print('repeat pass do not matc')
-        data = {
-            "auth_check": 1,
-            "url": "registration",
-            "registration_data": {
-                "username": str(self.username.text()).strip(),
-                "password": str(self.password.text()).strip(),
-                "first_name": str(self.firstname.text()).strip(),
-                "last_name": str(self.lastname.text()).strip(),
-                "email": str(self.email.text()).strip()
+        else:
+            data = {
+                "auth_check": 1,
+                "url": "registration",
+                "registration_data": {
+                    "username": str(self.username.text()).strip(),
+                    "password": str(self.password.text()).strip(),
+                    "first_name": str(self.firstname.text()).strip(),
+                    "last_name": str(self.lastname.text()).strip(),
+                    "email": str(self.email.text()).strip()
+                }
             }
-        }
-        self.parent.registerClient(data)
+            self.parent.registerClient(data)
 
     def print(self):
         print(f"{self.username.text()} {self.password.text()}")
@@ -651,17 +652,16 @@ class AuthenticationTab(QWidget):
         self.tab = LoginTab(parent)
         self.layout.addWidget(self.tab,1,0,1,1)
         self.tab.switchButton.clicked.connect(self.switchTab)
-
         self.setLayout(self.layout)
 
     def switchTab(self):
         if self.tab.tabName == "login":
             tab = RegistrationTab(self.parent)
-            self.parent.AuthHandlerSwitch = True
-            self.parent.registerPool()
+            # self.parent.AuthHandlerSwitch = True
+            # self.parent.registerPool()
         elif self.tab.tabName == "register":
             tab = LoginTab(self.parent)
-            self.parent.AuthHandlerSwitch = False
+            # self.parent.AuthHandlerSwitch = False
         # if self.codeVerification != None:
         #     self.layout.removeWidget(self.codeVerification)
         #     self.codeVerification.deleteLater()

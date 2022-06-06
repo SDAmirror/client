@@ -851,7 +851,8 @@ class MainWindow(QWidget):
 
 
     def openCloseWidgetBar(self):
-        if self.widgetStatus:self.widgetBar.hide()
+        if self.widgetStatus:
+            self.widgetBar.hide()
         else:
             self.widgetBar.show()
             self.widgetBar.activateWindow()
@@ -1037,7 +1038,7 @@ class MainWindow(QWidget):
 
         mm = MessageModel(str(uuid.uuid4()), to_send, self.username, username,message['send_date'], message['send_time'],False)
         self.sendMessage(username,mm)
-        self.l3.inputArea.input.clear()
+
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
 
     def logout(self):
@@ -1076,6 +1077,7 @@ class MainWindow(QWidget):
     def thread_complete(self):
         print("THREAD COMPLETE!")
         self.parent.switchTab()
+        self.parent.registerPool()
         # self.socket.close()
         # sys.exit()
 
@@ -1150,6 +1152,8 @@ class AppWindow(QWidget):
         self.signals.openCodeTab.connect(self.TAB.addCodeVerification)
 
         self.runServer()
+        self.threadpool = QThreadPool()
+        self.registerPool()
         self.setLayout(self.layout)
         conf = configparser.ConfigParser()
         conf.read('settings/auth.ini')
@@ -1160,8 +1164,7 @@ class AppWindow(QWidget):
                 "authentification_token": conf['AUTHDATA']['auth_token'],
                 "authorization_data": [conf['AUTHDATA']['username'], ''],
             })
-        self.threadpool = QThreadPool()
-        self.AuthHandlerSwitch = False
+
     def switchTab(self):
         if self.TAB.tabName =='authTab':
             mv = MainWindow(self.username,self.message_sender,self.message_receiver,self.cryptor,self.socket,self)
@@ -1229,8 +1232,8 @@ class AppWindow(QWidget):
         print("i am listening registrationHandler")
         global db
         message_receiver = self.message_receiver
-        while self.AuthHandlerSwitch:
-            # DB, UI, response.
+        while True:
+
             try:
                 message = self.socket.recv(2048)
                 message = message_receiver.recieve_message(1, message)
@@ -1241,7 +1244,8 @@ class AppWindow(QWidget):
                         if jm["auth_data_exchange"]:
                             continue
                         else:
-                            print("data not sent")
+                            loginError.emit({"reason": "data not sent"})
+
 
                     {
                         "50200": "status OK",
@@ -1276,7 +1280,7 @@ class AppWindow(QWidget):
                                 if jm["statusCode"] == 50242:
                                     loginError.emit({"reason": jm["message"]})
                                     opencodetab.emit()
-                                elif jm["statusCode"] == 50245:
+                                elif jm["statusCode"] == 50205:
                                     conf = configparser.ConfigParser()
                                     conf.read('settings/auth.ini')
                                     conf['AUTHDATA']['authenticated'] = 'yes'
@@ -1287,12 +1291,54 @@ class AppWindow(QWidget):
                                     conf['AUTHDATA']['lastname'] = jm['AuthenticationUser']['user']['last_name']
                                     with open('settings/auth.ini', 'w') as configfile:
                                         conf.write(configfile)
-                                    self.AuthHandlerSwitch = False
+
                                     switchTab.emit()
                                     break
-                                elif jm["statusCode"] == 50541:
+                                elif jm["statusCode"] == 50505:
                                     loginError.emit({"reason":jm["message"]})
+                        elif jm["url"] == "authentication":
+                            if not jm["auth_success"]:
+                                if jm["statusCode"] == 50425:
+                                    loginError.emit({"reason": jm["message"]})
+                                elif jm["statusCode"] == 50505:
+                                    loginError.emit({"reason": jm["message"]})
+                                elif jm["statusCode"] == 50425:
+                                    loginError.emit({"reason": jm["message"]})
+                            else:
+                                if jm["statusCode"] == 50205:
 
+                                    conf = configparser.ConfigParser()
+                                    conf.read('settings/auth.ini')
+                                    conf['AUTHDATA']['authenticated'] = 'yes'
+                                    conf['AUTHDATA']['auth_token'] = jm['AuthenticationUser']['authentication_token']
+                                    conf['AUTHDATA']['username'] = jm['AuthenticationUser']['user']['username']
+                                    conf['AUTHDATA']['email'] = jm['AuthenticationUser']['user']['email']
+                                    conf['AUTHDATA']['firstname'] = jm['AuthenticationUser']['user']['first_name']
+                                    conf['AUTHDATA']['lastname'] = jm['AuthenticationUser']['user']['last_name']
+                                    with open('settings/auth.ini', 'w') as configfile:
+                                        conf.write(configfile)
+
+                                    switchTab.emit()
+                                    break
+                        elif jm["url"] == "authorization":
+                            if not jm["auth_success"]:
+                                if jm["statusCode"] == 50505:
+                                    loginError.emit({"reason": jm["message"]})
+                            else:
+                                if jm["statusCode"] == 50205:
+                                    conf = configparser.ConfigParser()
+                                    conf.read('settings/auth.ini')
+                                    conf['AUTHDATA']['authenticated'] = 'yes'
+                                    conf['AUTHDATA']['auth_token'] = jm['AuthenticationUser']['authentication_token']
+                                    conf['AUTHDATA']['username'] = jm['AuthenticationUser']['user']['username']
+                                    conf['AUTHDATA']['email'] = jm['AuthenticationUser']['user']['email']
+                                    conf['AUTHDATA']['firstname'] = jm['AuthenticationUser']['user']['first_name']
+                                    conf['AUTHDATA']['lastname'] = jm['AuthenticationUser']['user']['last_name']
+                                    with open('settings/auth.ini', 'w') as configfile:
+                                        conf.write(configfile)
+
+                                    switchTab.emit()
+                                    break
 
 
 
@@ -1317,32 +1363,6 @@ class AppWindow(QWidget):
 
         self.threadpool.start(worker)
 
-    def registerClientCode(self):
-        message_sender = self.message_sender
-        message_receiver = self.message_receiver
-        while True:
-            code = input('code')
-            if code == "q": break
-            self.socket.send(message_sender.send_message(1, code))
-            print("sent")
-            m = self.socket.recv(2048)
-            m = message_receiver.recieve_message(1, m)
-            print(m)
-
-        print("sent")
-        m = self.socket.recv(2048)
-        m = message_receiver.recieve_message(1, m)
-
-        print(m, 'recived')
-        mess = json.loads(str(m))
-        print(mess)
-        # if mess['auth_success']:
-        #     print(mess['AuthenticationUser'])
-        #     self.signals.switchTab.emit()
-        # else:
-        #     print("failed", mess['reason'])
-        #     self.signals.loginError.emit(mess)
-        #     # raise KeyboardInterrupt
     def sendCode(self,code):
         message_sender = self.message_sender
         # message_receiver = self.message_receiver
@@ -1388,115 +1408,11 @@ class AppWindow(QWidget):
     def registerClient(self,data):
         self.username = data['registration_data']['username']
         message_sender = self.message_sender
-        message_receiver = self.message_receiver
         self.socket.send(message_sender.send_message(1, json.dumps(data)))
-        # cou = 3
-        # m = self.socket.recv()
-        # status = json.loads(message_receiver.recieve_message(1, m))
-        # print(status)
-        # if status['auth_data_exchange']:
-        #     print('data sent sucsessfully')
-        #
-        # else:
-        #     cou -= 1
-        #     if status['error'] == 50400:
-        #         print('data sent unsuccessful')
-        #
-        # print("sent")
-        # self.TAB.addCodeVerification()
-
-        # while True:
-        #     code = input('code')
-        #     if code == "q":
-        #         break
-        #     self.socket.send(message_sender.send_message(1, code))
-        #     print("sent")
-        #     m = self.socket.recv(2048)
-        #     m = message_receiver.recieve_message(1, m)
-        #     print(m)
-        #
-        # m = self.socket.recv(2048)
-        # m = message_receiver.recieve_message(1, m)
-        #
-        # print(m, 'recived')
-        # mess = json.loads(str(m))
-        # print(mess)
-        # if mess['auth_success']:
-        #     print(mess['AuthenticationUser'])
-        #     self.signals.switchTab.emit()
-        # else:
-        #     print("failed", mess['reason'])
-        #     self.signals.loginError.emit(mess)
-        # self.TAB.addCodeVerification()
     def authenticateClient(self, data):
-        # data = {
-        #     "auth_check": 1,
-        #     "url": "authorization",
-        #     "authorization_data":['user1', "password1"],
-        # }
         self.username = data['authorization_data'][0]
         message_sender = self.message_sender
-        message_receiver = self.message_receiver
-        cou = 3
-
         self.socket.send(message_sender.send_message(1, json.dumps(data)))
-        m = self.socket.recv()
-        status = json.loads(message_receiver.recieve_message(1, m))
-        if status['auth_data_exchange']:
-            print("sent")
-            m = self.socket.recv(2048)
-            m = message_receiver.recieve_message(1, m)
-
-            print(m, 'recived')
-            mess = json.loads(str(m))
-            print(mess)
-            if mess['auth_success']:
-                print(mess['AuthenticationUser'])
-                conf = configparser.ConfigParser()
-                conf.read('settings/auth.ini')
-                conf['AUTHDATA']['authenticated'] = 'yes'
-                conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
-                conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
-                conf['AUTHDATA']['email'] = mess['AuthenticationUser']['user']['email']
-                conf['AUTHDATA']['firstname'] = mess['AuthenticationUser']['user']['first_name']
-                conf['AUTHDATA']['lastname'] = mess['AuthenticationUser']['user']['last_name']
-                with open('settings/auth.ini', 'w') as configfile:
-                    conf.write(configfile)
-
-                self.switchTab()
-            else:
-                print("failed", mess['reason'])
-                self.signals.loginError.emit(mess)
-                # raise KeyboardInterrupt
-
-        else:
-            cou -= 1
-            if status['error'] == 50400:
-                print('data sent unsuccessful')
-
-        # print("sent")
-        # m = self.socket.recv(2048)
-        # m = message_receiver.recieve_message(1, m)
-        #
-        # print(m, 'recived')
-        # mess = json.loads(str(m))
-        # print(mess)
-        # if mess['auth_success']:
-        #     print(mess['AuthenticationUser'])
-        #     conf = configparser.ConfigParser()
-        #     conf.read('settings/auth.ini')
-        #     conf['AUTHDATA']['authenticated'] = 'yes'
-        #     conf['AUTHDATA']['auth_token'] = mess['AuthenticationUser']['authentication_token']
-        #     conf['AUTHDATA']['username'] = mess['AuthenticationUser']['user']['username']
-        #     with open('settings/auth.ini', 'w') as configfile:
-        #         conf.write(configfile)
-        #
-        #
-        #     self.switchTab()
-        # else:
-        #     print("failed", mess['reason'])
-        #     self.signals.loginError.emit(mess)
-        #     # raise KeyboardInterrupt
 
 if __name__ == "__main__":
     RHOST = "192.168.1.122"
