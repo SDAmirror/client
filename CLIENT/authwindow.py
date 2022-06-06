@@ -230,7 +230,9 @@ class LoginTab(QWidget):
               """)
         self.setLayout(self.layout)
     def prepareData(self):
-
+        if len((self.username.text()).strip()) == 0 or len((self.password.text()).strip()) == 0:
+            self.parent.TAB.reportError({'reason': "please provide username and password !!!"})
+            return
         data = {
             "auth_check": 1,
             "url": "authorization",
@@ -540,8 +542,13 @@ class RegistrationTab(QWidget):
             }
         """)
     def prepareData(self):
+        password = self.password.text().strip()
         if not self.password.text().strip() == self.password_repeat.text().strip():
-            print('repeat pass do not matc')
+            self.parent.TAB.reportError({'reason':"repeat password does not match"})
+        elif len(password) <8 or len(password) > 15:
+            self.parent.TAB.reportError({'reason': "password length should be more than 8 and less than 15"})
+        elif len((self.username.text()).strip()) == 0 or len((self.password.text()).strip()) ==0 or len((self.firstname.text()).strip()) ==0 or len((self.lastname.text()).strip()) ==0 or len((self.email.text()).strip()) ==0:
+            self.parent.TAB.reportError({'reason': "fill in all the fields"})
         else:
             data = {
                 "auth_check": 1,
@@ -554,6 +561,7 @@ class RegistrationTab(QWidget):
                     "email": str(self.email.text()).strip()
                 }
             }
+            self.parent.TAB.reportError({'reason': ""})
             self.parent.registerClient(data)
 
     def print(self):
