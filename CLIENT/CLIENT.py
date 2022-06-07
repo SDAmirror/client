@@ -19,7 +19,7 @@ from authwindow import *
 
 db = DB()
 conu = 0
-RHOST="localhost"
+RHOST="172.20.10.8"
 RPORT=4430
 
 edits = []
@@ -64,23 +64,32 @@ class Worker(QRunnable):
             self.signals.finished.emit()  # Done
 
 class MessageBox(QWidget):
-    def __init__(self,username="default",message="default"):
+    resized = pyqtSignal()
+    def __init__(self,username="default",message=""):
         super().__init__()
 
         self.parent = None
         self.genSygnal = GeneralSygnals()
         self.username = username
         self.box = QGridLayout()
-        self.userLabel = QLineEdit(username)
+        self.userLabel = QTextEdit(username)
+        self.userLabel.setStyleSheet("""
+               .QTextEdit {
+                    background: #ADD8E6;
+                    border-radius: 10px;
+            
+                    font-weight: bold;
+                }
+                """)
+                  
+        self.userLabel.append(message)
         self.userLabel.setReadOnly(True)
 
-        self.userLabel.setStyleSheet("""
-        .QLineEdit {
-            background: green;
-            border-radius: 10px;
-            color: red;
-        }
-        """)
+        self.userLabel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.userLabel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.userLabel.setSizePolicy(QSizePolicy.Expanding, 0)
+
 
         self.messsageLabel = QLineEdit(message)
         self.messsageLabel.setReadOnly(True)
@@ -92,12 +101,26 @@ class MessageBox(QWidget):
         }
         """)
 
-        self.box.addWidget(self.userLabel,0,0,3,1)
-        self.box.addWidget(self.messsageLabel,3,0,3,10)
+        self.box.addWidget(self.userLabel)
+        # self.box.addWidget(self.messsageLabel,3,0,3,10)
         self.setLayout(self.box)
         for w in self.findChildren(QWidget) + [self]:
             w.installEventFilter(self)
+        self.resized.connect(self.adj)
 
+    def adjHeight(self):
+        self.userLabel.setFixedHeight(math.ceil(self.userLabel.document().size().height()) + math.ceil(
+            self.userLabel.contentsMargins().top() * 2))
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super(MessageBox, self).resizeEvent(event)
+
+    # resize message items
+    def adj(self):
+        # self.dateWidget.setFixedHeight(math.ceil(self.dateWidget.document().size().height()) + math.ceil(self.dateWidget.contentsMargins().top() * 2))
+        self.userLabel.setFixedHeight(math.ceil(self.userLabel.document().size().height()) + math.ceil(
+            self.userLabel.contentsMargins().top() * 2))
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
             if event.buttons() & Qt.LeftButton:
@@ -190,6 +213,7 @@ class ChatList(scroller):
             self.chat_list[u] = mb
 
 class searchUserItem(QWidget):
+    resized = pyqtSignal()
     def __init__(self,username,firstname,lastname,parent):
         super(searchUserItem, self).__init__()
         self.username = username
@@ -198,32 +222,54 @@ class searchUserItem(QWidget):
 
         self.parent = parent
         self.box = QGridLayout()
-        self.userLabel = QLineEdit(self.username)
+        self.userLabel = QTextEdit(self.username)
+        self.userLabel.append(self.firstname+' '+self.lastname)
         self.userLabel.setReadOnly(True)
+        self.userLabel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.userLabel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.userLabel.setSizePolicy(QSizePolicy.Expanding, 0)
+        self.userLabel.setAttribute(103)
         self.userLabel.setStyleSheet("""
-                .QLineEdit {
-                    background: yellow;
+                .QTextEdit {
+                    background: #ADD8E6;
                     border-radius: 10px;
-                    color: red;
+            
+                    font-weight: bold;
                 }
                 """)
 
         self.nameLabel = QLineEdit(self.firstname+' '+self.lastname)
         self.nameLabel.setReadOnly(True)
-        self.nameLabel.setStyleSheet("""
-                .QLineEdit {
-                    background: yellow;
-                    border-radius: 10px;
-                    color: red;
-                }
-                """)
+        # self.nameLabel.setStyleSheet("""
+        #         .QLineEdit {
+        #             background: yellow;
+        #             border-radius: 10px;
+        #             color: red;
+        #         }
+        #         """)
 
-        self.box.addWidget(self.userLabel, 0, 0, 3, 1)
-        self.box.addWidget(self.nameLabel, 3, 0, 3, 10)
+
+        self.box.addWidget(self.userLabel)
+        # self.box.addWidget(self.nameLabel, 3, 0, 3, 10)
         self.setLayout(self.box)
 
         for w in self.findChildren(QWidget) + [self]:
             w.installEventFilter(self)
+        self.resized.connect(self.adj)
+
+    def adjHeight(self):
+        self.userLabel.setFixedHeight(math.ceil(self.userLabel.document().size().height()) + math.ceil(
+            self.userLabel.contentsMargins().top() * 2))
+
+    def resizeEvent(self, event):
+        self.resized.emit()
+        return super(searchUserItem, self).resizeEvent(event)
+
+    # resize message items
+    def adj(self):
+        # self.dateWidget.setFixedHeight(math.ceil(self.dateWidget.document().size().height()) + math.ceil(self.dateWidget.contentsMargins().top() * 2))
+        self.userLabel.setFixedHeight(math.ceil(self.userLabel.document().size().height()) + math.ceil(
+            self.userLabel.contentsMargins().top() * 2))
 
     # def mousePressEvent(self, searchUserItem):
     #     print(self.username,self.lastname)
@@ -858,8 +904,14 @@ class MainWindow(QWidget):
             self.widgetBar.activateWindow()
             self.widgetBar.raise_()
         self.widgetStatus = not self.widgetStatus
+
+    def loadChat(self,username):
+        message_sender = self.message_sender
+        message = {'url': 'loadchatrequest', 'username':username}
+        self.socket.send(message_sender.send_message(1, json.dumps(message)))
     def openChat(self,username):
         l3 = ChatWindow(username)
+
         l3.parent = self
         self.l3.deleteLater()
 
@@ -870,6 +922,8 @@ class MainWindow(QWidget):
         #
         self.layout.addWidget(self.l3, 0, 6, 1, 8)
         self.layout.setColumnStretch(6, 3)
+        if len(l3.messagesArea.messages) == 0:
+            self.loadChat(username)
     def listRemoteSearchUsers(self,users):
         for u in users['users']:
             si = searchUserItem(u['username'],u['firstname'],u['lastname'],self)
@@ -993,6 +1047,7 @@ class MainWindow(QWidget):
                             # m = self.socket.recv(2048)
                             # m = self.message_receiver.recieve_message(1, m)
                             # print(m, 'logout m')
+                            db.chats = {}
                             break
 
 
@@ -1055,6 +1110,7 @@ class MainWindow(QWidget):
         message = {'url': 'logout'}
 
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
+
         # self.threadpool.cancel(self.worker)
         # url = 'settings/auth.ini'
         # conf = configparser.ConfigParser()
