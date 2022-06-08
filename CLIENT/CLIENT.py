@@ -20,6 +20,7 @@ from authwindow import *
 db = DB()
 conu = 0
 RHOST="172.20.10.8"
+RHOST="localhost"
 RPORT=4430
 
 edits = []
@@ -486,11 +487,11 @@ class MessageItem(QWidget):
         self.content.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.content.setSizePolicy(QSizePolicy.Expanding, 0)
-
         self.content.setAttribute(103)
+
         self.content.setStyleSheet("""
             .QTextEdit {
-            background: rgb(245, 222, 179);
+            background: white;
             border-radius: 15px
             }
         """)
@@ -513,10 +514,10 @@ class MessageItem(QWidget):
         self.content.setFixedHeight(math.ceil(self.content.document().size().height()) + math.ceil(self.content.contentsMargins().top() * 2))
 
 class MessagesArea(scroller):
-    def __init__(self,username):
+    def __init__(self,username,parent):
         super(MessagesArea, self).__init__()
 
-        self.parent = None
+        self.parent = parent
         self.messages = []
         self.username = username
         # self.scrollArea.verticalScrollBar().setValue(self.scrollArea.verticalScrollBar().height())
@@ -529,7 +530,15 @@ class MessagesArea(scroller):
     def loadMessage(self,username):
         chat = db.getChat(username)
         for i in range(len(chat.messages)):
-            self.messages.append(MessageItem(chat.messages[i]))
+            mi = MessageItem(chat.messages[i])
+            if self.parent.username == chat.messages[i].sender:
+                mi.content.setStyleSheet("""
+                .QTextEdit {
+                    background: green;
+                    border-radius: 15px
+                    }
+                """)
+            self.messages.append(mi)
 
 class MessageInputArea(QWidget):
     resized = pyqtSignal()
@@ -697,7 +706,7 @@ class UserBar(QWidget):
         self.setLayout(self.layout)
 
 class ChatWindow(QWidget):
-    def __init__(self,username):
+    def __init__(self,username,parent):
         super(ChatWindow, self).__init__()
         self.parent = None
         self.username = username
@@ -717,7 +726,7 @@ class ChatWindow(QWidget):
         """)
 
             self.layout.addWidget(self.userBar)
-        self.messagesArea = MessagesArea(username)
+        self.messagesArea = MessagesArea(username,parent)
         self.messagesArea.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         self.messagesArea.setStyleSheet("""
@@ -738,6 +747,7 @@ class ChatWindow(QWidget):
             }
         """)
         self.layout.addWidget(self.messagesArea)
+
         self.inputArea = MessageInputArea()
 
 
@@ -819,7 +829,7 @@ class MainWindow(QWidget):
             }
         """)
         self.sideBar.chatBar.allChats()
-        self.l3 = ChatWindow(None)
+        self.l3 = ChatWindow(None,self)
         self.l3.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         # self.l3.setStyleSheet("""
         #     .QWidget {
@@ -910,9 +920,8 @@ class MainWindow(QWidget):
         message = {'url': 'loadchatrequest', 'username':username}
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
     def openChat(self,username):
-        l3 = ChatWindow(username)
+        l3 = ChatWindow(username,self)
 
-        l3.parent = self
         self.l3.deleteLater()
 
         self.l3.close()
@@ -933,7 +942,7 @@ class MainWindow(QWidget):
     def addChat(self, user):
 
 
-        f = MessageBox(f"{self.tempNewChats[user]['username']}", f"{json.dumps(self.tempNewChats[user]['message'])}")
+        f = MessageBox(f"{self.tempNewChats[user]['username']}", f"{json.dumps(self.tempNewChats[user]['message']['content'])}")
         f.parent = self
 
         self.sideBar.chatBar.chat_list[user]=f
@@ -948,6 +957,14 @@ class MainWindow(QWidget):
                              jm['message']['receiver'], jm['message']['send_date'], jm['message']['send_time'],
                              jm['message']['sent'])
                 mi = MessageItem(mm)
+                if self.username == mm.sender:
+
+                    mi.content.setStyleSheet("""
+                    .QTextEdit {
+                        background-color: #08f26e;
+                        border-radius: 15px
+                    }
+                """)
                 self.l3.messagesArea.messages.append(mi)
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages),mi)
                 # self.l3.messagesArea.layout.addWidget(mi)
@@ -974,8 +991,13 @@ class MainWindow(QWidget):
                     }
                 })
                 mi = MessageItem(message)
-                if self.username == message.sender:
-                    mi.setStyleSheet("background: #08F26E")
+
+                mi.content.setStyleSheet("""
+                    .QTextEdit {
+                        background-color: #08f26e;
+                        border-radius: 15px
+                    }
+                """)
                 self.l3.messagesArea.messages.append(mi)
 
                 self.l3.messagesArea.layout.insertWidget(len(self.l3.messagesArea.messages), mi)
@@ -1075,13 +1097,6 @@ class MainWindow(QWidget):
         message_sender = self.message_sender
 
         to_send = str(self.l3.inputArea.input.toPlainText())
-
-        # database check if user exist
-        # check keys
-        # if keys ok:
-        #   send message
-        # else:
-        #   renew keys
         if to_send == '':
             to_send = '1'
         if to_send.lower() == 'q':
@@ -1096,17 +1111,9 @@ class MainWindow(QWidget):
 
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
 
+        self.l3.inputArea.input.clear()
     def logout(self):
         message_sender = self.message_sender
-
-        to_send = str(self.l3.inputArea.input.toPlainText())
-
-        if to_send == '':
-            to_send = '1'
-        if to_send.lower() == 'q':
-            self.socket.close()
-
-
         message = {'url': 'logout'}
 
         self.socket.send(message_sender.send_message(1, json.dumps(message)))
@@ -1284,6 +1291,7 @@ class AppWindow(QWidget):
         print("key excahnge cuccess")
         # socket is ready
         # here authentication
+
     def registrationHandler(self,opencodetab,loginError,switchTab):
         print("i am listening registrationHandler")
         global db
@@ -1421,46 +1429,8 @@ class AppWindow(QWidget):
 
     def sendCode(self,code):
         message_sender = self.message_sender
-        # message_receiver = self.message_receiver
-
         self.socket.send(message_sender.send_message(1, json.dumps({'code':code})))
-        print("sent")
-        # m = self.socket.recv(2048)
-        # m = message_receiver.recieve_message(1, m)
-        # try:
-        #     m = json.loads(str(m))
-        #     if m['url'] == 'registration':
-        #         if 'auth_success' in m.keys():
-        #             print(m)
-        #             if m['auth_success']:
-        #                 print(m['AuthenticationUser'])
-        #                 conf = configparser.ConfigParser()
-        #                 conf.read('settings/auth.ini')
-        #                 conf['AUTHDATA']['authenticated'] = 'yes'
-        #                 conf['AUTHDATA']['auth_token'] = m['AuthenticationUser']['authentication_token']
-        #                 conf['AUTHDATA']['username'] = m['AuthenticationUser']['user']['username']
-        #                 conf['AUTHDATA']['email'] = m['AuthenticationUser']['user']['email']
-        #                 conf['AUTHDATA']['firstname'] = m['AuthenticationUser']['user']['first_name']
-        #                 conf['AUTHDATA']['lastname'] = m['AuthenticationUser']['user']['last_name']
-        #                 with open('settings/auth.ini', 'w') as configfile:
-        #                     conf.write(configfile)
-        #                 self.switchTab()
-        #             else:
-        #                 if 'AuthenticationUser' in m.keys():
-        #
-        #                     print("failed, but registred")
-        #                 else:
-        #                     print(m)
-        #                 # self.signals.loginError.emit(m)
-        #
-        #         if not m['auth_data_exchange']:
-        #             print(m['error'])
-        #
-        # except json.JSONDecodeError as e:
-        #     print(e)
-        # except Exception as e:
-        #     print(e,1350)
-        # print(m)
+
     def registerClient(self,data):
         self.username = data['registration_data']['username']
         message_sender = self.message_sender
@@ -1480,6 +1450,7 @@ if __name__ == "__main__":
     window.show()
     app.exec_()
     window.socket.close()
+
     sys.exit()
 
 
