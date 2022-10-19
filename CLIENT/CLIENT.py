@@ -1385,8 +1385,11 @@ class AppWindow(QWidget):
                                     switchTab.emit()
                                     break
                         elif jm["url"] == "authorization":
+
                             if not jm["auth_success"]:
                                 if jm["statusCode"] == 50505:
+                                    loginError.emit({"reason": jm["message"]})
+                                elif jm["statusCode"] == 50435:
                                     loginError.emit({"reason": jm["message"]})
                             else:
                                 if jm["statusCode"] == 50205:
